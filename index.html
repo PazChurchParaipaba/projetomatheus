@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matheus Oliveira | Shows & Financeiro</title>
+    <!-- Google Fonts: Outfit for headers, Inter for text -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- html2pdf -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Phosphor Icons (para ícones modernos) -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="background-effects">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+        <div class="glow-orb orb-3"></div>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar glass-panel">
+            <div class="logo">
+                <i class="ph ph-microphone-stage text-gradient"></i>
+                <h2>Matheus<span class="text-gradient">Shows</span></h2>
+            </div>
+            <ul class="nav-links">
+                <li class="active" data-target="dashboard">
+                    <i class="ph ph-squares-four"></i> Dashboard
+                </li>
+                <li data-target="shows">
+                    <i class="ph ph-calendar-blank"></i> Agenda
+                </li>
+                <li data-target="financeiro">
+                    <i class="ph ph-wallet"></i> Financeiro
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="avatar">MO</div>
+                    <div class="user-info">
+                        <strong>Matheus Oliveira</strong>
+                        <span>Admin</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            
+            <!-- Dashboard View -->
+            <section id="dashboard" class="view active">
+                <header class="view-header">
+                    <div>
+                        <h1>Visão Geral</h1>
+                        <p>Acompanhe o desempenho dos seus shows e saúde financeira.</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-primary glass-btn" onclick="openModal('modal-show')">
+                            <i class="ph ph-plus"></i> Novo Show
+                        </button>
+                    </div>
+                </header>
+                
+                <div class="stats-grid">
+                    <div class="stat-card glass-panel highlight-hover">
+                        <div class="stat-icon purple"><i class="ph ph-calendar-star"></i></div>
+                        <div class="stat-info">
+                            <h3>Próximos Shows</h3>
+                            <div class="value" id="dash-shows-count">0</div>
+                            <div class="trend positive"><i class="ph ph-trend-up"></i> Agenda ativa</div>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-panel highlight-hover">
+                        <div class="stat-icon green"><i class="ph ph-money"></i></div>
+                        <div class="stat-info">
+                            <h3>Receita Bruta Estimada</h3>
+                            <div class="value" id="dash-revenue">R$ 0,00</div>
+                            <div class="trend positive"><i class="ph ph-arrow-up-right"></i> Valores a receber</div>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-panel highlight-hover">
+                        <div class="stat-icon red"><i class="ph ph-receipt"></i></div>
+                        <div class="stat-info">
+                            <h3>Despesas / Custos</h3>
+                            <div class="value" id="dash-expenses">R$ 0,00</div>
+                            <div class="trend negative"><i class="ph ph-arrow-down-right"></i> Custos operacionais</div>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-panel highlight-hover">
+                        <div class="stat-icon blue"><i class="ph ph-piggy-bank"></i></div>
+                        <div class="stat-info">
+                            <h3>Lucro Líquido Estimado</h3>
+                            <div class="value text-gradient" id="dash-profit">R$ 0,00</div>
+                            <div class="trend positive"><i class="ph ph-check-circle"></i> Resultado final</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <!-- Chart -->
+                    <div class="card glass-panel grid-col-2">
+                        <div class="card-header">
+                            <h2>Fluxo de Caixa Mensal</h2>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="financeChart" height="250"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Upcoming Shows List -->
+                    <div class="card glass-panel">
+                        <div class="card-header flex-between">
+                            <h2>Próximos Eventos</h2>
+                            <button class="btn-text" onclick="document.querySelector('[data-target=\'shows\']').click()">Ver todos</button>
+                        </div>
+                        <div class="card-body" style="padding: 0;">
+                            <ul class="preview-list" id="dash-shows-list">
+                                <!-- Preenchido via JS -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Shows View -->
+            <section id="shows" class="view">
+                <header class="view-header flex-between" style="flex-wrap: wrap; gap: 20px;">
+                    <div>
+                        <h1>Agenda de Shows</h1>
+                        <p>Gerencie datas, locais e detalhes logísticos.</p>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <input type="text" id="filter-show-text" class="glass-input" placeholder="Buscar show ou cidade..." style="width: 200px;">
+                        <select id="filter-show-status" class="glass-input" style="width: 160px;">
+                            <option value="all">Todos Status</option>
+                            <option value="confirmado">Confirmado</option>
+                            <option value="orcamento">Orçamento</option>
+                            <option value="concluido">Concluído</option>
+                            <option value="cancelado">Cancelado</option>
+                        </select>
+                        <button class="btn btn-secondary glass-btn" onclick="exportToCSV('shows')">
+                            <i class="ph ph-download-simple"></i> Exportar
+                        </button>
+                        <button class="btn btn-primary glass-btn" onclick="openModal('modal-show')">
+                            <i class="ph ph-plus"></i> Novo Show
+                        </button>
+                    </div>
+                </header>
+                
+                <div class="shows-grid" id="shows-grid-container">
+                    <!-- Preenchido via JS com Cards complexos -->
+                </div>
+            </section>
+
+            <!-- Financeiro View -->
+            <section id="financeiro" class="view">
+                <header class="view-header flex-between">
+                    <div>
+                        <h1>Controle Financeiro</h1>
+                        <p>Controle preciso de cachês, despesas e vinculação a shows.</p>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <button class="btn btn-secondary glass-btn" onclick="exportToCSV('financeiro')">
+                            <i class="ph ph-download-simple"></i> Exportar
+                        </button>
+                        <button class="btn btn-danger glass-btn" onclick="openModal('modal-financeiro', 'saida')">
+                            <i class="ph ph-minus"></i> Despesa
+                        </button>
+                        <button class="btn btn-success glass-btn" onclick="openModal('modal-financeiro', 'entrada')">
+                            <i class="ph ph-plus"></i> Receita Ext.
+                        </button>
+                    </div>
+                </header>
+                <div class="card glass-panel">
+                    <div class="table-filters" style="padding: 16px 24px; border-bottom: 1px solid var(--border-light); display:flex; gap: 10px;">
+                        <select class="glass-input" id="filter-mes">
+                            <option value="all">Todos os Meses</option>
+                            <option value="0">Janeiro</option>
+                            <option value="1">Fevereiro</option>
+                            <option value="2">Março</option>
+                            <option value="3">Abril</option>
+                            <option value="4">Maio</option>
+                            <option value="5">Junho</option>
+                            <option value="6">Julho</option>
+                            <option value="7">Agosto</option>
+                            <option value="8">Setembro</option>
+                            <option value="9">Outubro</option>
+                            <option value="10">Novembro</option>
+                            <option value="11">Dezembro</option>
+                        </select>
+                        <select class="glass-input" id="filter-tipo">
+                            <option value="all">Todas Transações</option>
+                            <option value="entrada">Apenas Receitas</option>
+                            <option value="saida">Apenas Despesas</option>
+                        </select>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Descrição / Categoria</th>
+                                    <th>Vinculado ao Show</th>
+                                    <th>Tipo</th>
+                                    <th>Valor (R$)</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="financeiro-table-body">
+                                <tr><td colspan="7" class="text-center">Nenhum lançamento cadastrado.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+
+
+        </main>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Modals -->
+    <!-- Modal Show -->
+    <div class="modal-overlay" id="modal-show">
+        <div class="modal glass-panel modal-lg">
+            <div class="modal-header">
+                <h2><i class="ph ph-calendar-plus text-gradient"></i> Cadastrar Show</h2>
+                <button class="close-btn" onclick="closeModal('modal-show')"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-show">
+                    <input type="hidden" id="show-id">
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Data e Hora</label>
+                            <input type="datetime-local" id="show-data" class="glass-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Local / Casa de Show</label>
+                            <input type="text" id="show-local" class="glass-input" placeholder="Ex: Villa Country" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Cidade / UF</label>
+                            <input type="text" id="show-cidade" class="glass-input" placeholder="Ex: São Paulo, SP" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Contratante / Produtor</label>
+                            <input type="text" id="show-contratante" class="glass-input" placeholder="Nome da pessoa/empresa" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Valor do Cachê Bruto (R$)</label>
+                            <input type="number" id="show-valor" class="glass-input" step="0.01" placeholder="0.00" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Status do Contrato</label>
+                            <select id="show-status" class="glass-input">
+                                <option value="orcamento">Orçamento / Negociação</option>
+                                <option value="confirmado">Confirmado</option>
+                                <option value="concluido">Concluído / Pago</option>
+                                <option value="cancelado">Cancelado</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">Logística & Detalhes</div>
+                    <div class="form-group">
+                        <label>Observações Extras (Voo, Hotel, Horário de Passagem de Som)</label>
+                        <textarea id="show-obs" class="glass-input" rows="3" placeholder="Insira detalhes de hospedagem, translado e equipe..."></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary glass-btn" onclick="closeModal('modal-show')">Cancelar</button>
+                        <button type="submit" class="btn btn-primary glass-btn">Salvar Show</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Financeiro -->
+    <div class="modal-overlay" id="modal-financeiro">
+        <div class="modal glass-panel">
+            <div class="modal-header">
+                <h2 id="modal-fin-title">Novo Lançamento</h2>
+                <button class="close-btn" onclick="closeModal('modal-financeiro')"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-financeiro">
+                    <input type="hidden" id="fin-id">
+                    <input type="hidden" id="fin-tipo-hidden">
+                    <div class="form-group">
+                        <label>Data do Pagamento/Recebimento</label>
+                        <input type="date" id="fin-data" class="glass-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Descrição</label>
+                        <input type="text" id="fin-descricao" class="glass-input" placeholder="Ex: Pagamento Equipe Técnica, Adiantamento..." required>
+                    </div>
+                    <div class="form-group">
+                        <label>Categoria</label>
+                        <select id="fin-categoria" class="glass-input">
+                            <!-- Preenchido via JS dependendo do tipo -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Vincular a um Show (Opcional para calcular lucro)</label>
+                        <select id="fin-show-id" class="glass-input">
+                            <option value="">Nenhum show vinculado</option>
+                            <!-- Preenchido via JS -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Valor (R$)</label>
+                        <input type="number" id="fin-valor" class="glass-input" step="0.01" placeholder="0.00" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="fin-status" class="glass-input">
+                            <option value="pago">Pago / Recebido</option>
+                            <option value="pendente">Pendente / Agendado</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary glass-btn" onclick="closeModal('modal-financeiro')">Cancelar</button>
+                        <button type="submit" class="btn btn-primary glass-btn">Salvar Lançamento</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden PDF Template Premium -->
+    <div id="pdf-template" class="pdf-container-premium" style="display: none;">
+        <div class="pdf-header-premium">
+            <div class="pdf-logo-wrapper">
+                <h1 class="pdf-logo-premium">MATHEUS OLIVEIRA</h1>
+                <div class="pdf-logo-line"></div>
+            </div>
+            <p class="pdf-subtitle-premium">PROPOSTA DE APRESENTAÇÃO ARTÍSTICA</p>
+        </div>
+        
+        <div class="pdf-body-premium">
+            <div class="pdf-card-premium">
+                <h2 class="pdf-section-title"><i class="ph ph-info"></i> Detalhes do Evento</h2>
+                <div class="pdf-grid">
+                    <div class="pdf-grid-item">
+                        <span class="pdf-label">Artista / Atração</span>
+                        <span class="pdf-value-text">Matheus Oliveira</span>
+                    </div>
+                    <div class="pdf-grid-item">
+                        <span class="pdf-label">Contratante</span>
+                        <span class="pdf-value-text" id="pdf-contratante"></span>
+                    </div>
+                    <div class="pdf-grid-item">
+                        <span class="pdf-label">Local</span>
+                        <span class="pdf-value-text" id="pdf-local"></span>
+                    </div>
+                    <div class="pdf-grid-item">
+                        <span class="pdf-label">Cidade / UF</span>
+                        <span class="pdf-value-text" id="pdf-cidade"></span>
+                    </div>
+                    <div class="pdf-grid-item" style="grid-column: 1 / -1;">
+                        <span class="pdf-label">Data e Horário</span>
+                        <span class="pdf-value-text" id="pdf-data"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pdf-card-premium highlight-card">
+                <h2 class="pdf-section-title" style="margin-bottom: 20px;"><i class="ph ph-currency-dollar"></i> Proposta Financeira</h2>
+                <div class="pdf-price-box">
+                    <span class="pdf-price-label">Cachê Artístico</span>
+                    <span class="pdf-price-value">R$ <span id="pdf-valor"></span></span>
+                </div>
+            </div>
+
+            <div class="pdf-card-premium" id="pdf-obs-section">
+                <h2 class="pdf-section-title"><i class="ph ph-list-checks"></i> Logística e Observações</h2>
+                <p class="pdf-obs-text" id="pdf-obs"></p>
+            </div>
+        </div>
+        
+        <div class="pdf-footer-premium">
+            <p><i class="ph ph-warning-circle"></i> Proposta válida por 15 dias a partir da data de emissão.</p>
+            <p>Para confirmar a data, é necessária a assinatura do contrato e pagamento do sinal acordado.</p>
+        </div>
+    </div>
+
+    <!-- Hidden PDF Template CONTRATO -->
+    <div id="pdf-contrato-template" class="pdf-container-premium" style="display: none;">
+        <div class="pdf-header-premium">
+            <div class="pdf-logo-wrapper">
+                <h1 class="pdf-logo-premium">MATHEUS OLIVEIRA</h1>
+                <div class="pdf-logo-line"></div>
+            </div>
+            <p class="pdf-subtitle-premium">CONTRATO DE PRESTAÇÃO DE SERVIÇOS ARTÍSTICOS</p>
+        </div>
+        
+        <div class="pdf-body-premium" style="font-size: 0.95rem; line-height: 1.6;">
+            <p style="margin-bottom: 20px; text-align: justify; color: #cbd5e1;">Pelo presente instrumento particular, de um lado <strong>MATHEUS OLIVEIRA</strong>, doravante denominado <strong>CONTRATADO</strong>, e de outro lado <strong id="contrato-contratante"></strong>, doravante denominado <strong>CONTRATANTE</strong>, têm entre si justo e acordado o seguinte:</p>
+
+            <div class="pdf-card-premium" style="padding: 25px; margin-bottom: 20px;">
+                <h2 class="pdf-section-title" style="font-size: 1.1rem; margin-bottom: 12px;"><i class="ph ph-calendar-check"></i> Cláusula 1ª - Do Evento</h2>
+                <p class="pdf-obs-text">O CONTRATADO compromete-se a realizar uma apresentação musical no dia <strong id="contrato-data"></strong>, no local denominado <strong id="contrato-local"></strong>, situado na cidade de <strong id="contrato-cidade"></strong>.</p>
+            </div>
+
+            <div class="pdf-card-premium highlight-card" style="padding: 25px; margin-bottom: 20px;">
+                <h2 class="pdf-section-title" style="font-size: 1.1rem; margin-bottom: 12px;"><i class="ph ph-currency-dollar"></i> Cláusula 2ª - Valores e Pagamento</h2>
+                <p class="pdf-obs-text">Pelos serviços prestados, o CONTRATANTE pagará ao CONTRATADO a quantia de <strong>R$ <span id="contrato-valor"></span></strong>. A forma de pagamento e o adiantamento (sinal) seguem o combinado previamente entre as partes.</p>
+            </div>
+
+            <div class="pdf-card-premium" style="padding: 25px; margin-bottom: 30px;">
+                <h2 class="pdf-section-title" style="font-size: 1.1rem; margin-bottom: 12px;"><i class="ph ph-warning-circle"></i> Cláusula 3ª - Condições Gerais</h2>
+                <p class="pdf-obs-text" style="font-size: 0.9rem;">
+                    1. O cancelamento injustificado por parte do CONTRATANTE implicará em multa de 50% do valor total acordado.<br><br>
+                    2. A segurança do CONTRATADO e de sua equipe no local do evento é de inteira responsabilidade do CONTRATANTE.
+                </p>
+                <div id="contrato-obs-section" style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; display: none;">
+                    <strong>Observações Adicionais:</strong> <span id="contrato-obs" style="font-size: 0.9rem;"></span>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; margin-top: 60px; text-align: center;">
+                <div style="width: 45%;">
+                    <div style="border-top: 1px solid #94a3b8; padding-top: 10px;">
+                        <strong style="color: #f1f5f9;">MATHEUS OLIVEIRA</strong><br>
+                        <span style="font-size: 0.8rem; color: #64748b;">Contratado</span>
+                    </div>
+                </div>
+                <div style="width: 45%;">
+                    <div style="border-top: 1px solid #94a3b8; padding-top: 10px;">
+                        <strong id="contrato-assinatura-contratante" style="color: #f1f5f9;"></strong><br>
+                        <span style="font-size: 0.8rem; color: #64748b;">Contratante</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
