@@ -943,11 +943,11 @@ body {
     .logo {
         padding: 0;
         margin-bottom: 0;
-        width: 60px;
+        width: auto;
     }
     
     .logo img {
-        max-width: 50px;
+        max-width: 110px;
     }
 
     .nav-links {
