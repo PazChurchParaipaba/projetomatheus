@@ -683,9 +683,86 @@ function exportToCSV(type) {
     showToast('Planilha exportada com sucesso!', 'success');
 }
 
+// --- Auth Logic ---
+
+function checkSession() {
+    const sessionUserStr = localStorage.getItem('app_user');
+    
+    if (sessionUserStr) {
+        try {
+            const sessionUser = JSON.parse(sessionUserStr);
+            let userName = sessionUser.nome || sessionUser.name || sessionUser.email.split('@')[0];
+            let userRole = sessionUser.role || sessionUser.perfil || 'Usuário';
+
+            // Garante que o Erick seja reconhecido como Admin com o nome correto
+            if (sessionUser.email && sessionUser.email.toLowerCase().includes('erickbarroso')) {
+                userName = 'Erick Barroso';
+                userRole = 'Administrador';
+            }
+
+            const initials = userName.substring(0, 2).toUpperCase();
+            
+            document.getElementById('sidebar-user-name').textContent = userName;
+            document.getElementById('sidebar-user-avatar').textContent = initials;
+            document.getElementById('sidebar-user-role').textContent = userRole;
+            
+        } catch (e) {
+            console.error("Erro ao ler usuário da sessão", e);
+        }
+
+        document.getElementById('login-overlay').style.display = 'none';
+        document.getElementById('app-container').style.display = 'flex';
+        syncFromSupabase();
+    } else {
+        document.getElementById('login-overlay').style.display = 'flex';
+        document.getElementById('app-container').style.display = 'none';
+    }
+}
+
+document.getElementById('form-login').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    const btn = document.getElementById('btn-login');
+    
+    btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Entrando...';
+    btn.disabled = true;
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('profiles')
+            .select('*')
+            .eq('email', email)
+            .eq('password', password);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            localStorage.setItem('app_user', JSON.stringify(data[0]));
+            document.getElementById('login-email').value = '';
+            document.getElementById('login-password').value = '';
+            checkSession();
+            showToast('Login realizado com sucesso!', 'success');
+        } else {
+            showToast('Erro ao fazer login: Credenciais inválidas.', 'danger');
+        }
+    } catch (err) {
+        showToast('Erro ao conectar: ' + err.message, 'danger');
+    } finally {
+        btn.innerHTML = 'Entrar no Sistema';
+        btn.disabled = false;
+    }
+});
+
+document.getElementById('btn-logout').addEventListener('click', () => {
+    localStorage.removeItem('app_user');
+    checkSession();
+    showToast('Logout realizado.', 'info');
+});
+
 // Inicialização
 function initApp() {
-    syncFromSupabase();
+    checkSession();
 }
 
 initApp();
