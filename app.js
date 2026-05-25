@@ -182,9 +182,13 @@ document.getElementById('form-financeiro').addEventListener('submit', async (e) 
     e.preventDefault();
     const isEdit = document.getElementById('fin-id').value;
     
+    const rawDesc = document.getElementById('fin-descricao').value;
+    const resp = document.getElementById('fin-responsavel').value;
+    const finalDesc = resp ? `[${resp}] ${rawDesc}` : rawDesc;
+
     let finObj = {
         data: document.getElementById('fin-data').value,
-        descricao: document.getElementById('fin-descricao').value,
+        descricao: finalDesc,
         categoria: document.getElementById('fin-categoria').value,
         tipo: document.getElementById('fin-tipo-hidden').value,
         valor: parseFloat(document.getElementById('fin-valor').value),
@@ -218,9 +222,20 @@ function editFin(id) {
     openModal('modal-financeiro', fin.tipo);
     document.querySelector('#modal-financeiro .modal-header h2').innerHTML = '<i class="ph ph-pencil text-gradient"></i> Editar Lançamento';
     
+    let desc = fin.descricao;
+    let resp = '';
+    if (desc.startsWith('[Everton] ')) {
+        resp = 'Everton';
+        desc = desc.replace('[Everton] ', '');
+    } else if (desc.startsWith('[Matheus] ')) {
+        resp = 'Matheus';
+        desc = desc.replace('[Matheus] ', '');
+    }
+
     document.getElementById('fin-id').value = fin.id;
     document.getElementById('fin-data').value = fin.data;
-    document.getElementById('fin-descricao').value = fin.descricao;
+    document.getElementById('fin-descricao').value = desc;
+    document.getElementById('fin-responsavel').value = resp;
     document.getElementById('fin-categoria').value = fin.categoria;
     document.getElementById('fin-valor').value = fin.valor;
     document.getElementById('fin-status').value = fin.status;
@@ -335,24 +350,34 @@ function renderFinanceiroView() {
     filtrados.sort((a, b) => new Date(b.data) - new Date(a.data));
 
     const htmlRows = filtrados.map(item => {
-        const linkedId = item.show_id || item.showId;
-        const show = linkedId ? state.shows.find(s => s.id === linkedId) : null;
-        const showLinkName = show ? `${show.local} (${formatDateCustom(show.data)})` : '-';
+        const showTitle = item.shows ? item.shows.local : '';
+        const showLinkName = showTitle ? `<i class="ph ph-calendar-star"></i> ${showTitle}` : '-';
         
-        let typeBadge = item.tipo === 'entrada' 
-            ? '<span style="color: var(--success)"><i class="ph ph-arrow-up-right"></i> Entrada</span>'
-            : '<span style="color: var(--danger)"><i class="ph ph-arrow-down-right"></i> Saída</span>';
-            
-        let statusBadge = item.status === 'pago'
-            ? '<span class="badge badge-success">Concluído</span>'
+        let statusBadge = item.status === 'pago' 
+            ? '<span class="badge badge-success">Pago</span>'
             : '<span class="badge badge-warning">Pendente</span>';
+            
+        let typeBadge = item.tipo === 'entrada'
+            ? '<span style="color: var(--success);"><i class="ph ph-arrow-down-left"></i> Entrada</span>'
+            : '<span style="color: var(--danger);"><i class="ph ph-arrow-up-right"></i> Saída</span>';
+
+        let desc = item.descricao;
+        let resp = '';
+        if (desc.startsWith('[Everton] ')) {
+            resp = 'Everton';
+            desc = desc.replace('[Everton] ', '');
+        } else if (desc.startsWith('[Matheus] ')) {
+            resp = 'Matheus';
+            desc = desc.replace('[Matheus] ', '');
+        }
 
         return `
             <tr>
                 <td>${formatDateCustom(item.data)}</td>
                 <td>
-                    <strong>${item.descricao}</strong><br>
+                    <strong>${desc}</strong><br>
                     <small style="color: var(--text-muted); text-transform: uppercase; font-size: 0.7rem;">${item.categoria}</small>
+                    ${resp ? `<br><small style="color: var(--primary); font-size: 0.7rem;"><i class="ph ph-user"></i> <b>${resp}</b></small>` : ''}
                 </td>
                 <td style="font-size: 0.85rem; color: var(--info);">${showLinkName}</td>
                 <td>${typeBadge}</td>
