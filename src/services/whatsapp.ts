@@ -389,8 +389,7 @@ export class WhatsAppService {
                                 try { fs.unlinkSync(pdfPath); } catch(_) {}
                             }
                         } else {
-                            const prefixedResponse = `*Assistente Matheus, disse:*\n\n${aiResponse}`;
-                            await this.sendMessage(remoteJid, prefixedResponse);
+                            await this.sendMessage(remoteJid, aiResponse);
                             if (!this.userStates[remoteJid]) {
                                 this.userStates[remoteJid] = {
                                     type: 'BOT',
