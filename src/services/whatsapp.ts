@@ -139,6 +139,16 @@ export class WhatsAppService {
 
     async connectToWhatsApp() {
         try {
+            let version;
+            try {
+                const latest = await fetchLatestBaileysVersion();
+                version = latest.version;
+                console.log(`📡 Usando Baileys v${version.join('.')}`);
+            } catch (e) {
+                console.warn('⚠️ Erro ao buscar vers\u00e3o do WhatsApp, usando fallback...');
+                version = [2, 3000, 1015901307]; // Fallback gen\u00e9rico est\u00e1vel
+            }
+
             const { state, saveCreds } = await useSupabaseAuthState(this.authStateStr);
 
             if (this.sock) {
@@ -154,7 +164,8 @@ export class WhatsAppService {
             this.sock = makeWASocket({
                 logger: pino({ level: 'silent' }), // Alterado para silent para não travar o Koyeb com excesso de logs
                 auth: state,
-                browser: ['Mac OS', 'Chrome', '121.0.0.0'], // String específica mais aceita hoje em dia
+                version,
+                browser: ['Chrome', 'Chrome', '120.0.0'], // Configuração moderna e estável para WhatsApp
                 syncFullHistory: false,
                 markOnlineOnConnect: false, // Fundamental para não tomar block de conexão ao ler o QR Code
                 keepAliveIntervalMs: 30000,
