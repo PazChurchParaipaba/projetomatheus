@@ -5,14 +5,14 @@
 */
 
 :root {
-    --bg-dark: #0a0a0f;
-    --glass-bg: rgba(25, 25, 35, 0.4);
-    --glass-border: rgba(255, 255, 255, 0.08);
-    --glass-highlight: rgba(255, 255, 255, 0.15);
+    --bg-dark: #050505; /* Preto profundo */
+    --glass-bg: rgba(20, 20, 20, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-highlight: rgba(255, 255, 255, 0.2);
     
-    --primary: #8b5cf6;
-    --primary-hover: #7c3aed;
-    --secondary: #ec4899;
+    --primary: #d4d4d4; /* Prata/Cinza claro */
+    --primary-hover: #ffffff; /* Branco puro */
+    --secondary: #737373; /* Cinza escuro/Chumbo */
     
     --success: #10b981;
     --success-dim: rgba(16, 185, 129, 0.2);
@@ -21,8 +21,8 @@
     --warning: #f59e0b;
     --info: #3b82f6;
 
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
+    --text-main: #ffffff;
+    --text-muted: #a3a3a3;
     
     --font-heading: 'Outfit', sans-serif;
     --font-body: 'Inter', sans-serif;
@@ -67,20 +67,20 @@ body {
 .orb-1 {
     top: -10%; left: -10%;
     width: 500px; height: 500px;
-    background: var(--primary);
+    background: rgba(212, 212, 212, 0.15);
 }
 
 .orb-2 {
     bottom: -10%; right: -5%;
     width: 600px; height: 600px;
-    background: var(--secondary);
+    background: rgba(255, 255, 255, 0.1);
     animation-delay: -5s;
 }
 
 .orb-3 {
     top: 40%; left: 50%;
     width: 400px; height: 400px;
-    background: var(--info);
+    background: rgba(115, 115, 115, 0.2);
     animation-delay: -10s;
 }
 
@@ -168,10 +168,10 @@ body {
 }
 
 .nav-links li.active {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.1));
+    background: linear-gradient(135deg, rgba(212, 212, 212, 0.2), rgba(115, 115, 115, 0.1));
     color: var(--text-main);
-    border: 1px solid rgba(139, 92, 246, 0.3);
-    box-shadow: inset 0 0 20px rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(212, 212, 212, 0.3);
+    box-shadow: inset 0 0 20px rgba(212, 212, 212, 0.1);
 }
 
 .sidebar-footer {
@@ -299,7 +299,7 @@ body {
     font-size: 1.5rem;
 }
 
-.stat-icon.purple { background: rgba(139, 92, 246, 0.15); color: var(--primary); }
+.stat-icon.purple { background: rgba(212, 212, 212, 0.15); color: var(--primary); }
 .stat-icon.green { background: var(--success-dim); color: var(--success); }
 .stat-icon.red { background: var(--danger-dim); color: var(--danger); }
 .stat-icon.blue { background: rgba(59, 130, 246, 0.15); color: var(--info); }
@@ -549,12 +549,12 @@ body {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--primary), var(--primary-hover));
-    color: white;
-    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+    background: linear-gradient(135deg, var(--secondary), var(--primary-hover));
+    color: #050505;
+    box-shadow: 0 4px 15px rgba(212, 212, 212, 0.3);
 }
 .btn-primary:hover {
-    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.5);
+    box-shadow: 0 8px 25px rgba(212, 212, 212, 0.5);
     transform: translateY(-2px);
 }
 
@@ -756,17 +756,16 @@ body {
 /* --- Premium PDF Template Styling --- */
 .pdf-container-premium {
     width: 794px;
-    height: 1123px;
+    min-height: 1123px; /* Allow content to expand beyond 1 page */
     padding: 50px 60px;
-    background: #0f172a; /* Dark slate */
-    color: #f8fafc;
+    background: #ffffff; /* Fundo branco para economizar tinta e facilitar assinatura */
+    color: #0f172a; /* Texto escuro */
     font-family: 'Inter', sans-serif;
     box-sizing: border-box;
     position: relative;
-    overflow: hidden;
 }
 
-/* Background decoration */
+/* Background decoration - Lighter for printing */
 .pdf-container-premium::before {
     content: '';
     position: absolute;
@@ -774,7 +773,7 @@ body {
     right: -150px;
     width: 400px;
     height: 400px;
-    background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, rgba(15, 23, 42, 0) 70%);
+    background: radial-gradient(circle, rgba(212, 212, 212, 0.2) 0%, rgba(255, 255, 255, 0) 70%);
     border-radius: 50%;
     z-index: 0;
 }
@@ -800,7 +799,7 @@ body {
     font-size: 2.2rem;
     font-weight: 800;
     letter-spacing: 6px;
-    color: #ffffff;
+    color: #000000;
     margin: 0;
     text-transform: uppercase;
 }
@@ -808,35 +807,37 @@ body {
 .pdf-logo-line {
     height: 3px;
     width: 60%;
-    background: linear-gradient(90deg, transparent, #8b5cf6, transparent);
+    background: linear-gradient(90deg, transparent, #000000, transparent);
     margin: 10px auto 0;
 }
 
 .pdf-subtitle-premium {
     font-size: 1rem;
-    color: #94a3b8;
+    color: #404040;
     font-weight: 500;
     letter-spacing: 3px;
     text-transform: uppercase;
 }
 
 .pdf-card-premium {
-    background: rgba(30, 41, 59, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 12px;
     padding: 30px;
     margin-bottom: 25px;
+    page-break-inside: avoid;
+    break-inside: avoid;
 }
 
 .highlight-card {
-    background: linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(139, 92, 246, 0.1) 100%);
-    border: 1px solid rgba(139, 92, 246, 0.3);
+    background: rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0, 0, 0, 0.2);
 }
 
 .pdf-section-title {
     font-family: 'Outfit', sans-serif;
     font-size: 1.3rem;
-    color: #8b5cf6;
+    color: #000000;
     margin-bottom: 20px;
     display: flex;
     align-items: center;
@@ -859,7 +860,7 @@ body {
 
 .pdf-label {
     font-size: 0.85rem;
-    color: #64748b;
+    color: #505050;
     text-transform: uppercase;
     letter-spacing: 1px;
     font-weight: 600;
@@ -867,7 +868,7 @@ body {
 
 .pdf-value-text {
     font-size: 1.1rem;
-    color: #f1f5f9;
+    color: #000000;
     font-weight: 500;
 }
 
@@ -875,7 +876,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.05);
     padding: 20px 25px;
     border-radius: 8px;
     border-left: 4px solid #10b981;
@@ -883,7 +884,7 @@ body {
 
 .pdf-price-label {
     font-size: 1.2rem;
-    color: #cbd5e1;
+    color: #404040;
     font-weight: 500;
 }
 
@@ -897,16 +898,16 @@ body {
 .pdf-obs-text {
     font-size: 1rem;
     line-height: 1.6;
-    color: #cbd5e1;
+    color: #202020;
 }
 
 .pdf-footer-premium {
     margin-top: 40px;
     text-align: center;
     font-size: 0.85rem;
-    color: #64748b;
+    color: #505050;
     padding-top: 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .pdf-footer-premium p {
@@ -915,4 +916,153 @@ body {
     align-items: center;
     justify-content: center;
     gap: 6px;
+}
+
+/* --- Responsividade (Mobile) --- */
+@media (max-width: 1024px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: auto;
+        height: auto;
+        margin: 10px;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 15px;
+    }
+
+    .logo {
+        padding: 0;
+        margin-bottom: 0;
+        width: auto;
+    }
+    
+    .logo img {
+        max-width: 110px;
+    }
+
+    .nav-links {
+        display: flex;
+        flex-direction: row;
+        gap: 5px;
+        margin: 0;
+        padding: 0;
+    }
+
+    .nav-links li {
+        padding: 10px;
+        margin-bottom: 0;
+        font-size: 0; /* Oculta texto, mantém ícone */
+        justify-content: center;
+    }
+    
+    .nav-links li i {
+        font-size: 1.5rem;
+        margin: 0;
+    }
+
+    .sidebar-footer {
+        display: none;
+    }
+
+    .main-content {
+        padding: 15px;
+    }
+
+    .view-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .view-header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .view-header > div:last-child {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .view-header .glass-input {
+        width: 100% !important;
+    }
+    
+    .view-header .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .table-filters {
+        flex-direction: column;
+    }
+    
+    .table-filters .glass-input {
+        width: 100%;
+    }
+    
+    .pdf-container-premium {
+        width: 100%;
+        padding: 20px;
+        min-height: auto;
+    }
+    
+    .pdf-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-info .value {
+        font-size: 1.5rem;
+    }
+}
+
+/* --- Login Overlay --- */
+.login-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    background: transparent;
+    transition: var(--transition);
+}
+
+.login-card {
+    width: 100%;
+    max-width: 400px;
+    padding: 40px;
+    animation: fadeScale 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

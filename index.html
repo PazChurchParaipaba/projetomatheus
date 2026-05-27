@@ -25,11 +25,33 @@
         <div class="glow-orb orb-3"></div>
     </div>
 
-    <div class="app-container">
+    <!-- Login Overlay -->
+    <div id="login-overlay" class="login-overlay">
+        <div class="login-card glass-panel">
+            <div style="text-align: center; margin-bottom: 24px;">
+                <img src="logoatualizada.png" alt="Matheus Oliveira Logo" style="width: 150px; border-radius: 12px; filter: drop-shadow(0 4px 12px rgba(212,212,212,0.15));">
+                <h2 style="font-family: var(--font-heading); margin-top: 16px;">Acesso Restrito</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Insira suas credenciais para acessar o painel.</p>
+            </div>
+            <form id="form-login">
+                <div class="form-group">
+                    <label>E-mail</label>
+                    <input type="email" id="login-email" class="glass-input" required placeholder="seu@email.com">
+                </div>
+                <div class="form-group" style="margin-top: 16px;">
+                    <label>Senha</label>
+                    <input type="password" id="login-password" class="glass-input" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn btn-primary glass-btn" style="width: 100%; margin-top: 24px;" id="btn-login">Entrar no Sistema</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="app-container" id="app-container" style="display: none;">
         <!-- Sidebar Navigation -->
         <nav class="sidebar glass-panel">
             <div class="logo" style="display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 24px; padding: 0 10px;">
-                <img src="logo.png" alt="Matheus Oliveira Logo" style="width: 100%; max-width: 180px; border-radius: 12px; filter: drop-shadow(0 4px 12px rgba(124,58,237,0.3));">
+                <img src="logoatualizada.png" alt="Matheus Oliveira Logo" style="width: 100%; max-width: 180px; border-radius: 12px; filter: drop-shadow(0 4px 12px rgba(212,212,212,0.15));">
             </div>
             <ul class="nav-links">
                 <li class="active" data-target="dashboard">
@@ -41,15 +63,21 @@
                 <li data-target="financeiro">
                     <i class="ph ph-wallet"></i> Financeiro
                 </li>
+                <li data-target="whatsapp">
+                    <i class="ph ph-whatsapp-logo"></i> Bot WhatsApp
+                </li>
             </ul>
             <div class="sidebar-footer">
                 <div class="user-profile">
-                    <div class="avatar">MO</div>
+                    <div class="avatar" id="sidebar-user-avatar">MO</div>
                     <div class="user-info">
-                        <strong>Matheus Oliveira</strong>
-                        <span>Admin</span>
+                        <strong id="sidebar-user-name">Matheus Oliveira</strong>
+                        <span id="sidebar-user-role">Admin</span>
                     </div>
                 </div>
+                <button class="btn btn-secondary glass-btn" id="btn-logout" style="width: 100%; margin-top: 16px; justify-content: center;">
+                    <i class="ph ph-sign-out"></i> Sair
+                </button>
             </div>
         </nav>
 
@@ -224,6 +252,46 @@
                 </div>
             </section>
 
+            <!-- WhatsApp View -->
+            <section id="whatsapp" class="view">
+                <header class="view-header flex-between">
+                    <div>
+                        <h1>Bot do WhatsApp</h1>
+                        <p>Conecte o número do Assistente Virtual para atendimento automático.</p>
+                    </div>
+                    <div>
+                        <button class="btn btn-secondary glass-btn" onclick="limparSessaoBot()">
+                            <i class="ph ph-arrows-clockwise"></i> Reiniciar Bot
+                        </button>
+                    </div>
+                </header>
+                <div class="dashboard-grid">
+                    <div class="card glass-panel" style="text-align: center; padding: 40px;">
+                        <div id="loginSection">
+                            <h2>Conectar Assistente Matheus Shows</h2>
+                            <p style="color: var(--text-muted); font-size: 14px; margin: 10px 0 20px;">Abra o WhatsApp > Aparelhos Conectados > Conectar um aparelho</p>
+                            
+                            <div id="qrPlaceholder" style="background: #fff; padding: 20px; border-radius: 24px; display: inline-block; margin: 20px 0; box-shadow: 0 0 30px rgba(99, 102, 241, 0.3);">
+                                <div style="width: 280px; height: 280px; color: #000; display: flex; align-items: center; justify-content: center;">
+                                    Carregando...
+                                </div>
+                            </div>
+                            <div id="qrContainer" style="display: none; background: #fff; padding: 20px; border-radius: 24px; margin: 20px auto; width: fit-content; box-shadow: 0 0 30px rgba(99, 102, 241, 0.3);">
+                                <img id="qrImg" src="" alt="QR Code" style="width: 280px; height: 280px; display: block; image-rendering: pixelated;" />
+                            </div>
+                            
+                            <div class="status-pulse" id="statusText" style="color: var(--primary); font-weight: bold; margin-top: 10px;">Aguardando novo código...</div>
+                            <div id="connectingStatus" style="display: none; color: var(--warning); font-size: 14px; margin-top: 10px;">⏳ Sincronizando com WhatsApp...</div>
+                        </div>
+
+                        <div id="connectedSection" style="display: none;">
+                            <h1 style="color: var(--success); margin: 0;">✅ Bot Conectado!</h1>
+                            <p style="color: var(--text-muted); margin: 10px 0;">O assistente virtual já está online e pronto para receber clientes.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
 
 
         </main>
@@ -311,6 +379,14 @@
                         <input type="text" id="fin-descricao" class="glass-input" placeholder="Ex: Pagamento Equipe Técnica, Adiantamento..." required>
                     </div>
                     <div class="form-group">
+                        <label>Responsável (Quem Solicitou)</label>
+                        <select id="fin-responsavel" class="glass-input" required>
+                            <option value="">Selecione...</option>
+                            <option value="Everton">Everton</option>
+                            <option value="Matheus">Matheus</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label>Categoria</label>
                         <select id="fin-categoria" class="glass-input">
                             <!-- Preenchido via JS dependendo do tipo -->
@@ -347,7 +423,7 @@
     <div id="pdf-template" class="pdf-container-premium" style="display: none;">
         <div class="pdf-header-premium">
             <div class="pdf-logo-wrapper">
-                <h1 class="pdf-logo-premium">MATHEUS OLIVEIRA</h1>
+                <img src="logoatualizada.png" alt="Matheus Oliveira" style="width: 220px; display: block; margin: 0 auto; margin-bottom: 15px; border-radius: 8px;">
                 <div class="pdf-logo-line"></div>
             </div>
             <p class="pdf-subtitle-premium">PROPOSTA DE APRESENTAÇÃO ARTÍSTICA</p>
@@ -404,47 +480,64 @@
     <div id="pdf-contrato-template" class="pdf-container-premium" style="display: none;">
         <div class="pdf-header-premium">
             <div class="pdf-logo-wrapper">
-                <h1 class="pdf-logo-premium">MATHEUS OLIVEIRA</h1>
+                <img src="logoatualizada.png" alt="Matheus Oliveira" style="width: 220px; display: block; margin: 0 auto; margin-bottom: 15px; border-radius: 8px;">
                 <div class="pdf-logo-line"></div>
             </div>
             <p class="pdf-subtitle-premium">CONTRATO DE PRESTAÇÃO DE SERVIÇOS ARTÍSTICOS</p>
         </div>
         
-        <div class="pdf-body-premium" style="font-size: 0.95rem; line-height: 1.6;">
-            <p style="margin-bottom: 20px; text-align: justify; color: #cbd5e1;">Pelo presente instrumento particular, de um lado <strong>MATHEUS OLIVEIRA</strong>, doravante denominado <strong>CONTRATADO</strong>, e de outro lado <strong id="contrato-contratante"></strong>, doravante denominado <strong>CONTRATANTE</strong>, têm entre si justo e acordado o seguinte:</p>
+        <div class="pdf-body-premium" style="font-size: 0.95rem; line-height: 1.6; color: #202020;">
+            <p style="margin-bottom: 20px; text-align: justify; color: #202020;">Pelo presente instrumento particular, de um lado a produção de <strong>MATHEUS OLIVEIRA</strong>, doravante denominado <strong>CONTRATADO</strong>, e de outro lado <strong id="contrato-contratante"></strong>, doravante denominado <strong>CONTRATANTE</strong>, têm entre si justo e acordado as seguintes cláusulas e condições:</p>
 
-            <div class="pdf-card-premium" style="padding: 25px; margin-bottom: 20px;">
-                <h2 class="pdf-section-title" style="font-size: 1.1rem; margin-bottom: 12px;"><i class="ph ph-calendar-check"></i> Cláusula 1ª - Do Evento</h2>
-                <p class="pdf-obs-text">O CONTRATADO compromete-se a realizar uma apresentação musical no dia <strong id="contrato-data"></strong>, no local denominado <strong id="contrato-local"></strong>, situado na cidade de <strong id="contrato-cidade"></strong>.</p>
+            <div class="pdf-card-premium" style="padding: 20px; margin-bottom: 15px;">
+                <h2 class="pdf-section-title" style="font-size: 1.05rem; margin-bottom: 10px;"><i class="ph ph-calendar-check"></i> Cláusula 1ª - Do Evento e Estrutura</h2>
+                <p class="pdf-obs-text" style="font-size: 0.9rem;">1.1. O CONTRATADO compromete-se a realizar uma apresentação musical no dia <strong id="contrato-data"></strong>, no local denominado <strong id="contrato-local"></strong>, na cidade de <strong id="contrato-cidade"></strong>.<br>
+                1.2. Fica sob total e exclusiva responsabilidade do CONTRATANTE a obtenção de todos os alvarás (Prefeitura, Bombeiros, Polícias), pagamento de ECAD e liberação do local.<br>
+                1.3. O CONTRATANTE obriga-se a fornecer estrutura de palco, som, luz e camarim (com alimentação e bebidas) em total conformidade com o Rider Técnico exigido pelo CONTRATADO. O não cumprimento das exigências técnicas dará o direito ao CONTRATADO de não se apresentar, sem devolução do sinal.</p>
             </div>
 
-            <div class="pdf-card-premium highlight-card" style="padding: 25px; margin-bottom: 20px;">
-                <h2 class="pdf-section-title" style="font-size: 1.1rem; margin-bottom: 12px;"><i class="ph ph-currency-dollar"></i> Cláusula 2ª - Valores e Pagamento</h2>
-                <p class="pdf-obs-text">Pelos serviços prestados, o CONTRATANTE pagará ao CONTRATADO a quantia de <strong>R$ <span id="contrato-valor"></span></strong>. A forma de pagamento e o adiantamento (sinal) seguem o combinado previamente entre as partes.</p>
+            <div class="pdf-card-premium highlight-card" style="padding: 20px; margin-bottom: 15px;">
+                <h2 class="pdf-section-title" style="font-size: 1.05rem; margin-bottom: 10px;"><i class="ph ph-currency-dollar"></i> Cláusula 2ª - Valores e Condições de Pagamento</h2>
+                <p class="pdf-obs-text" style="font-size: 0.9rem;">2.1. Pelos serviços, o CONTRATANTE pagará o valor líquido e irreajustável de <strong>R$ <span id="contrato-valor"></span></strong>.<br>
+                2.2. A confirmação da data ocorre mediante o pagamento do sinal de 50% na assinatura deste contrato. O saldo de 50% deverá ser pago impreterivelmente até o momento da chegada da equipe ao local do evento.<br>
+                2.3. O atraso no pagamento do saldo isenta o CONTRATADO de subir ao palco e incidirá multa de 10% mais juros de mora.</p>
             </div>
 
-            <div class="pdf-card-premium" style="padding: 25px; margin-bottom: 30px;">
-                <h2 class="pdf-section-title" style="font-size: 1.1rem; margin-bottom: 12px;"><i class="ph ph-warning-circle"></i> Cláusula 3ª - Condições Gerais</h2>
+            <div class="pdf-card-premium" style="padding: 20px; margin-bottom: 20px;">
+                <h2 class="pdf-section-title" style="font-size: 1.05rem; margin-bottom: 10px;"><i class="ph ph-warning-circle"></i> Cláusula 3ª - Do Cancelamento</h2>
                 <p class="pdf-obs-text" style="font-size: 0.9rem;">
-                    1. O cancelamento injustificado por parte do CONTRATANTE implicará em multa de 50% do valor total acordado.<br><br>
-                    2. A segurança do CONTRATADO e de sua equipe no local do evento é de inteira responsabilidade do CONTRATANTE.
+                    3.1. Em caso de cancelamento do evento por parte do CONTRATANTE a menos de 30 dias da data do show, incidirá multa correspondente a 100% do valor total do contrato, retendo-se o sinal pago e cobrando-se a diferença.
                 </p>
-                <div id="contrato-obs-section" style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; display: none;">
-                    <strong>Observações Adicionais:</strong> <span id="contrato-obs" style="font-size: 0.9rem;"></span>
+            </div>
+
+            <div class="pdf-card-premium" style="padding: 20px; margin-bottom: 20px;">
+                <h2 class="pdf-section-title" style="font-size: 1.05rem; margin-bottom: 10px;"><i class="ph ph-camera"></i> Cláusula 4ª - Dos Direitos de Imagem</h2>
+                <p class="pdf-obs-text" style="font-size: 0.9rem;">
+                    4.1. Fica autorizado à produção do CONTRATADO o registro de imagens (foto e vídeo) da apresentação, podendo utilizá-las para fins de divulgação e portfólio.
+                </p>
+            </div>
+
+            <div class="pdf-card-premium" style="padding: 20px; margin-bottom: 20px;">
+                <h2 class="pdf-section-title" style="font-size: 1.05rem; margin-bottom: 10px;"><i class="ph ph-scales"></i> Cláusula 5ª - Do Foro</h2>
+                <p class="pdf-obs-text" style="font-size: 0.9rem;">
+                    5.1. As partes elegem o foro da comarca de domicílio do CONTRATADO para dirimir quaisquer dúvidas decorrentes deste contrato, renunciando a qualquer outro.
+                </p>
+                <div id="contrato-obs-section" style="margin-top: 15px; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 15px; display: none;">
+                    <strong>Observações Especiais do Show:</strong> <span id="contrato-obs" style="font-size: 0.9rem;"></span>
                 </div>
             </div>
 
-            <div style="display: flex; justify-content: space-between; margin-top: 60px; text-align: center;">
+            <div style="display: flex; justify-content: space-between; margin-top: 50px; text-align: center; page-break-inside: avoid; break-inside: avoid;">
                 <div style="width: 45%;">
-                    <div style="border-top: 1px solid #94a3b8; padding-top: 10px;">
-                        <strong style="color: #f1f5f9;">MATHEUS OLIVEIRA</strong><br>
-                        <span style="font-size: 0.8rem; color: #64748b;">Contratado</span>
+                    <div style="border-top: 1px solid #000000; padding-top: 10px;">
+                        <strong style="color: #000000;">MATHEUS OLIVEIRA</strong><br>
+                        <span style="font-size: 0.8rem; color: #505050;">Contratado (Produção)</span>
                     </div>
                 </div>
                 <div style="width: 45%;">
-                    <div style="border-top: 1px solid #94a3b8; padding-top: 10px;">
-                        <strong id="contrato-assinatura-contratante" style="color: #f1f5f9;"></strong><br>
-                        <span style="font-size: 0.8rem; color: #64748b;">Contratante</span>
+                    <div style="border-top: 1px solid #000000; padding-top: 10px;">
+                        <strong id="contrato-assinatura-contratante" style="color: #000000;"></strong><br>
+                        <span style="font-size: 0.8rem; color: #505050;">Contratante</span>
                     </div>
                 </div>
             </div>

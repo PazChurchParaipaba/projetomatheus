@@ -55,6 +55,7 @@ document.querySelectorAll('.nav-links li').forEach(link => {
         if (target === 'dashboard') updateDashboard();
         if (target === 'shows') renderShowsView();
         if (target === 'financeiro') renderFinanceiroView();
+        if (target === 'whatsapp') initBotStatus();
     });
 });
 
@@ -182,9 +183,13 @@ document.getElementById('form-financeiro').addEventListener('submit', async (e) 
     e.preventDefault();
     const isEdit = document.getElementById('fin-id').value;
     
+    const rawDesc = document.getElementById('fin-descricao').value;
+    const resp = document.getElementById('fin-responsavel').value;
+    const finalDesc = resp ? `[${resp}] ${rawDesc}` : rawDesc;
+
     let finObj = {
         data: document.getElementById('fin-data').value,
-        descricao: document.getElementById('fin-descricao').value,
+        descricao: finalDesc,
         categoria: document.getElementById('fin-categoria').value,
         tipo: document.getElementById('fin-tipo-hidden').value,
         valor: parseFloat(document.getElementById('fin-valor').value),
@@ -218,9 +223,20 @@ function editFin(id) {
     openModal('modal-financeiro', fin.tipo);
     document.querySelector('#modal-financeiro .modal-header h2').innerHTML = '<i class="ph ph-pencil text-gradient"></i> Editar Lançamento';
     
+    let desc = fin.descricao;
+    let resp = '';
+    if (desc.startsWith('[Everton] ')) {
+        resp = 'Everton';
+        desc = desc.replace('[Everton] ', '');
+    } else if (desc.startsWith('[Matheus] ')) {
+        resp = 'Matheus';
+        desc = desc.replace('[Matheus] ', '');
+    }
+
     document.getElementById('fin-id').value = fin.id;
     document.getElementById('fin-data').value = fin.data;
-    document.getElementById('fin-descricao').value = fin.descricao;
+    document.getElementById('fin-descricao').value = desc;
+    document.getElementById('fin-responsavel').value = resp;
     document.getElementById('fin-categoria').value = fin.categoria;
     document.getElementById('fin-valor').value = fin.valor;
     document.getElementById('fin-status').value = fin.status;
@@ -335,24 +351,34 @@ function renderFinanceiroView() {
     filtrados.sort((a, b) => new Date(b.data) - new Date(a.data));
 
     const htmlRows = filtrados.map(item => {
-        const linkedId = item.show_id || item.showId;
-        const show = linkedId ? state.shows.find(s => s.id === linkedId) : null;
-        const showLinkName = show ? `${show.local} (${formatDateCustom(show.data)})` : '-';
+        const showTitle = item.shows ? item.shows.local : '';
+        const showLinkName = showTitle ? `<i class="ph ph-calendar-star"></i> ${showTitle}` : '-';
         
-        let typeBadge = item.tipo === 'entrada' 
-            ? '<span style="color: var(--success)"><i class="ph ph-arrow-up-right"></i> Entrada</span>'
-            : '<span style="color: var(--danger)"><i class="ph ph-arrow-down-right"></i> Saída</span>';
-            
-        let statusBadge = item.status === 'pago'
-            ? '<span class="badge badge-success">Concluído</span>'
+        let statusBadge = item.status === 'pago' 
+            ? '<span class="badge badge-success">Pago</span>'
             : '<span class="badge badge-warning">Pendente</span>';
+            
+        let typeBadge = item.tipo === 'entrada'
+            ? '<span style="color: var(--success);"><i class="ph ph-arrow-down-left"></i> Entrada</span>'
+            : '<span style="color: var(--danger);"><i class="ph ph-arrow-up-right"></i> Saída</span>';
+
+        let desc = item.descricao;
+        let resp = '';
+        if (desc.startsWith('[Everton] ')) {
+            resp = 'Everton';
+            desc = desc.replace('[Everton] ', '');
+        } else if (desc.startsWith('[Matheus] ')) {
+            resp = 'Matheus';
+            desc = desc.replace('[Matheus] ', '');
+        }
 
         return `
             <tr>
                 <td>${formatDateCustom(item.data)}</td>
                 <td>
-                    <strong>${item.descricao}</strong><br>
+                    <strong>${desc}</strong><br>
                     <small style="color: var(--text-muted); text-transform: uppercase; font-size: 0.7rem;">${item.categoria}</small>
+                    ${resp ? `<br><small style="color: var(--primary); font-size: 0.7rem;"><i class="ph ph-user"></i> <b>${resp}</b></small>` : ''}
                 </td>
                 <td style="font-size: 0.85rem; color: var(--info);">${showLinkName}</td>
                 <td>${typeBadge}</td>
@@ -683,9 +709,144 @@ function exportToCSV(type) {
     showToast('Planilha exportada com sucesso!', 'success');
 }
 
+// --- Auth Logic ---
+
+function checkSession() {
+    const sessionUserStr = localStorage.getItem('app_user');
+    
+    if (sessionUserStr) {
+        try {
+            const sessionUser = JSON.parse(sessionUserStr);
+            let userName = sessionUser.nome || sessionUser.name || sessionUser.email.split('@')[0];
+            let userRole = sessionUser.role || sessionUser.perfil || 'Usuário';
+
+            // Garante que o Erick seja reconhecido como Admin com o nome correto
+            if (sessionUser.email && sessionUser.email.toLowerCase().includes('erickbarroso')) {
+                userName = 'Erick Barroso';
+                userRole = 'Administrador';
+            }
+
+            const initials = userName.substring(0, 2).toUpperCase();
+            
+            document.getElementById('sidebar-user-name').textContent = userName;
+            document.getElementById('sidebar-user-avatar').textContent = initials;
+            document.getElementById('sidebar-user-role').textContent = userRole;
+            
+        } catch (e) {
+            console.error("Erro ao ler usuário da sessão", e);
+        }
+
+        document.getElementById('login-overlay').style.display = 'none';
+        document.getElementById('app-container').style.display = 'flex';
+        syncFromSupabase();
+    } else {
+        document.getElementById('login-overlay').style.display = 'flex';
+        document.getElementById('app-container').style.display = 'none';
+    }
+}
+
+document.getElementById('form-login').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    const btn = document.getElementById('btn-login');
+    
+    btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Entrando...';
+    btn.disabled = true;
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('profiles')
+            .select('*')
+            .eq('email', email)
+            .eq('password', password);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            localStorage.setItem('app_user', JSON.stringify(data[0]));
+            document.getElementById('login-email').value = '';
+            document.getElementById('login-password').value = '';
+            checkSession();
+            showToast('Login realizado com sucesso!', 'success');
+        } else {
+            showToast('Erro ao fazer login: Credenciais inválidas.', 'danger');
+        }
+    } catch (err) {
+        showToast('Erro ao conectar: ' + err.message, 'danger');
+    } finally {
+        btn.innerHTML = 'Entrar no Sistema';
+        btn.disabled = false;
+    }
+});
+
+document.getElementById('btn-logout').addEventListener('click', () => {
+    localStorage.removeItem('app_user');
+    checkSession();
+    showToast('Logout realizado.', 'info');
+});
+
 // Inicialização
 function initApp() {
-    syncFromSupabase();
+    checkSession();
+}
+
+// --- WhatsApp Bot Logic ---
+let botStatusInterval = null;
+const BOT_API_URL = 'http://localhost:3000'; // Ajuste conforme a porta que o bot roda
+
+async function checkBotStatus() {
+    try {
+        const res = await fetch(`${BOT_API_URL}/api/whatsapp-status`);
+        if (!res.ok) return;
+        
+        const data = await res.json();
+        
+        if (data.connected) {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('connectedSection').style.display = 'block';
+        } else {
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('connectedSection').style.display = 'none';
+            
+            if (data.hasQr && data.qr) {
+                document.getElementById('qrImg').src = data.qr;
+                document.getElementById('qrPlaceholder').style.display = 'none';
+                document.getElementById('qrContainer').style.display = 'block';
+                document.getElementById('statusText').innerText = 'Escaneie agora!';
+            }
+        }
+    } catch (e) {
+        console.warn('Erro ao conectar com a API do Bot. O bot está rodando?', e);
+    }
+}
+
+function initBotStatus() {
+    checkBotStatus();
+    if (botStatusInterval) clearInterval(botStatusInterval);
+    botStatusInterval = setInterval(checkBotStatus, 3000);
+}
+
+async function limparSessaoBot() {
+    try {
+        showToast('Reiniciando conexão com o Bot...', 'info');
+        const res = await fetch(`${BOT_API_URL}/api/clear-session`, {
+            method: 'POST',
+            // Temporariamente burlando auth ou enviando o básico se o bot exigir
+            headers: { 'Authorization': 'Bearer igreja_super_secreta_123' }
+        });
+        
+        if (res.ok) {
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('connectedSection').style.display = 'none';
+            document.getElementById('qrPlaceholder').style.display = 'inline-block';
+            document.getElementById('qrContainer').style.display = 'none';
+            document.getElementById('statusText').innerText = 'Aguardando novo código...';
+            showToast('Sessão limpa, aguarde o novo QR Code.', 'success');
+        }
+    } catch (e) {
+        showToast('Erro ao tentar reiniciar o bot.', 'danger');
+    }
 }
 
 initApp();

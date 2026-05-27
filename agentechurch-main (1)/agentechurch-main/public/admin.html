@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Pastor - Paz Church Paraipaba</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #f7f9fc;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        #apiConfigModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #apiConfigModal.open {
+            display: flex;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen text-gray-800 p-6">
+
+    <div class="max-w-7xl mx-auto space-y-8">
+        <!-- Header -->
+        <header
+            class="flex flex-col md:flex-row justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100 gap-4">
+            <div>
+                <h1 class="text-3xl font-bold gradient-text">Paz Church Paraipaba</h1>
+                <p class="text-gray-500 mt-1">Painel Administrativo do Agente Igreja</p>
+            </div>
+            <div class="flex flex-wrap gap-3">
+                <button onclick="openApiConfig()"
+                    class="px-4 py-2 border border-blue-200 text-blue-600 rounded-xl font-medium hover:bg-blue-50 transition flex items-center gap-2"
+                    title="Configurar URL do servidor">
+                    🔗 URL do Servidor
+                </button>
+                <button onclick="forceReconnect()" id="reconnectBtn"
+                    class="px-4 py-2 border border-orange-200 text-orange-600 rounded-xl font-medium hover:bg-orange-50 transition flex items-center gap-2"
+                    title="Forçar reconexão do WhatsApp">
+                    🔄 Reconectar WA
+                </button>
+                <button onclick="clearSession()" id="clearSessionBtn"
+                    class="px-4 py-2 border border-red-200 text-red-600 rounded-xl font-medium hover:bg-red-50 transition flex items-center gap-2"
+                    title="Limpar arquivos de sessão e reconectar (Use se travar)">
+                    🧹 Limpar Sessão
+                </button>
+                <button onclick="toggleMaintenance()" id="maintenanceBtn"
+                    class="px-4 py-2 border border-gray-300 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition flex items-center gap-2">
+                    🛠️ Modo Manutenção
+                </button>
+                <a id="qrLink" href="#" target="_blank"
+                    class="px-5 py-2.5 bg-green-100 text-green-700 rounded-xl font-medium hover:bg-green-200 transition">
+                    📱 Conectar WhatsApp
+                </a>
+                <a href="/pazkids" target="_blank"
+                    class="px-5 py-2.5 bg-amber-100 text-amber-700 rounded-xl font-medium hover:bg-amber-200 transition">
+                    🧒 Paz Kids
+                </a>
+                <button onclick="logout()"
+                    class="px-5 py-2.5 bg-red-50 text-red-600 rounded-xl font-medium hover:bg-red-100 transition">
+                    Sair
+                </button>
+            </div>
+        </header>
+
+        <!-- Modal: Configurar URL da API -->
+        <div id="apiConfigModal">
+            <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4">
+                <h2 class="text-xl font-bold text-gray-800 mb-2">🔗 URL do Servidor</h2>
+                <p class="text-sm text-gray-500 mb-5">
+                    Cole aqui a URL do seu servidor (Back4App, Koyeb, Railway, etc.).<br>
+                    É salva no navegador — não precisa digitar de novo.
+                </p>
+                <label class="block text-sm font-medium text-gray-700 mb-1">URL do Backend</label>
+                <input type="url" id="apiUrlInput"
+                    class="w-full border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 mb-1"
+                    placeholder="https://meu-bot.b4a.run">
+                <p class="text-xs text-gray-400 mb-5">Não coloque <code>/api</code> no final. Exemplo:
+                    <code>https://meu-bot.b4a.run</code>
+                </p>
+                <div class="flex gap-3">
+                    <button onclick="saveApiUrl()"
+                        class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition">
+                        ✅ Salvar e Conectar
+                    </button>
+                    <button onclick="closeApiConfig()"
+                        class="px-4 py-3 border border-gray-200 text-gray-500 rounded-xl hover:bg-gray-50 transition">
+                        Cancelar
+                    </button>
+                </div>
+                <div id="apiUrlStatus" class="mt-4 text-sm text-center hidden"></div>
+            </div>
+        </div>
+
+        <!-- Login Modal (Hidden by default, shown via JS if no token) -->
+
+        <!-- Stats Cards & Charts -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="text-gray-400 text-sm font-medium uppercase tracking-wider">Total de Membros</h3>
+                <p class="text-4xl font-bold text-gray-800 mt-2" id="totalMembers">--</p>
+                <div class="mt-4 text-xs text-green-500 font-bold bg-green-50 inline-block px-2 py-1 rounded">
+                    + <span id="newToday">0</span> hoje
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 md:col-span-2">
+                <h3 class="text-gray-400 text-sm font-medium uppercase tracking-wider mb-2">Distribuição por Célula</h3>
+                <!-- Correção Gráfico Gigante: Height reduzido -->
+                <div class="h-64">
+                    <canvas id="lifeChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="text-gray-400 text-sm font-medium uppercase tracking-wider">Status do Sistema</h3>
+                <div class="mt-4 space-y-3">
+                    <p class="text-sm font-medium text-gray-600 flex justify-between">
+                        Bot WhatsApp:
+                        <span id="botStatus" class="text-green-500 font-bold">Verificando...</span>
+                    </p>
+                    <p class="text-sm font-medium text-gray-600 flex justify-between">
+                        API:
+                        <span class="text-green-500 font-bold">Online 🚀</span>
+                    </p>
+                    <p class="text-sm font-medium text-gray-600 flex justify-between">
+                        Manutenção:
+                        <span id="maintStatus" class="text-gray-500 font-bold">Desativada</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <!-- Broadcast Section -->
+            <div class="lg:col-span-1">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-6">
+                    <h2 class="text-xl font-bold mb-4 text-gray-800">📢 Disparar Aviso</h2>
+                    <p class="text-sm text-gray-500 mb-4">Envie uma mensagem para todos os membros. (Delay aleatório de
+                        2-5s entre envios)</p>
+
+                    <input type="file" id="broadcastImg" accept="image/png, image/jpeg, image/webp"
+                        class="w-full mb-3 p-3 border border-gray-200 rounded-xl bg-gray-50 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Agendar Disparo (Opcional)</label>
+                    <input type="datetime-local" id="broadcastTime"
+                        class="w-full mb-3 p-3 border border-gray-200 rounded-xl bg-gray-50 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none text-gray-600">
+
+                    <textarea id="broadcastMsg" rows="6"
+                        class="w-full p-4 border border-gray-200 rounded-xl bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition resize-none"
+                        placeholder="Digite sua mensagem aqui..."></textarea>
+
+                    <button onclick="sendBroadcast()"
+                        class="w-full mt-4 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transform hover:-translate-y-0.5 transition-all">
+                        Agendar / Enviar para Todos 🚀
+                    </button>
+                </div>
+            </div>
+
+            <!-- Members List -->
+            <div class="lg:col-span-2">
+                <div
+                    class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col min-h-[600px]">
+                    <div
+                        class="p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <h2 class="text-xl font-bold text-gray-800">👥 Membros Cadastrados</h2>
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <input type="text" id="searchInput" placeholder="Buscar por nome..."
+                                onkeyup="debounceSearch()"
+                                class="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                            <button onclick="exportCSV()"
+                                class="px-3 py-2 bg-green-50 text-green-600 rounded-lg text-sm font-bold hover:bg-green-100">
+                                📥 CSV
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto flex-1">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+                                    <th class="p-4 font-semibold">Nome</th>
+                                    <th class="p-4 font-semibold">Telefone</th>
+                                    <th class="p-4 font-semibold">Célula</th>
+                                    <th class="p-4 font-semibold">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="membersTable" class="divide-y divide-gray-100 text-sm text-gray-700">
+                                <tr>
+                                    <td colspan="4" class="p-8 text-center text-gray-400">Carregando membros...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="p-4 border-t border-gray-100 flex justify-between items-center bg-gray-50">
+                        <button onclick="prevPage()" id="prevBtn" disabled
+                            class="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm disabled:opacity-50 hover:bg-gray-50">Anterior</button>
+                        <span id="pageInfo" class="text-sm text-gray-500">Página 1 de 1</span>
+                        <button onclick="nextPage()" id="nextBtn" disabled
+                            class="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm disabled:opacity-50 hover:bg-gray-50">Próxima</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Features Section -->
+        <div class="mt-8 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-2">🧠 Gerenciador de Inteligência Artificial (79 Módulos)</h2>
+            <p class="text-sm text-gray-500 mb-6">Ative ou desative as habilidades do Agente Igreja em tempo real. Cada
+                funcionalidade ligada entra automaticamente no contexto neural do robô.</p>
+
+            <div id="featuresContainer" class="space-y-6">
+                <div class="text-center text-gray-400 py-4">Carregando módulos...</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ====================================================
+        // URL DA API - Configúrável pelo usuário via modal
+        // Salva no localStorage do navegador (permanente)
+        // ====================================================
+        const API_URL_KEY = 'paz_church_api_url';
+
+        function getApiUrl() {
+            const saved = localStorage.getItem(API_URL_KEY);
+            if (saved) return saved.replace(/\/$/, '') + '/api';
+            // Fallback: se estiver acessando pelo próprio servidor
+            const isDevelopment = location.port === '5500' || location.port === '3000';
+            return isDevelopment ? 'http://localhost:3000/api' : location.origin + '/api';
+        }
+
+        // Atualiza os links dinâmicos que dependem da URL base
+        function updateDynamicLinks() {
+            const base = localStorage.getItem(API_URL_KEY) || location.origin;
+            const qrLink = document.getElementById('qrLink');
+            if (qrLink) qrLink.href = base.replace(/\/$/, '') + '/qr';
+        }
+
+        // Modal funcs
+        function openApiConfig() {
+            const current = localStorage.getItem(API_URL_KEY) || '';
+            document.getElementById('apiUrlInput').value = current;
+            document.getElementById('apiUrlStatus').classList.add('hidden');
+            document.getElementById('apiConfigModal').classList.add('open');
+        }
+
+        function closeApiConfig() {
+            document.getElementById('apiConfigModal').classList.remove('open');
+        }
+
+        async function saveApiUrl() {
+            const val = document.getElementById('apiUrlInput').value.trim();
+            if (!val) return;
+
+            const statusEl = document.getElementById('apiUrlStatus');
+            statusEl.textContent = '⏳ Testando conexão...';
+            statusEl.className = 'mt-4 text-sm text-center text-gray-500';
+            statusEl.classList.remove('hidden');
+
+            try {
+                const res = await fetch(val.replace(/\/$/, '') + '/api/dashboard-stats', { signal: AbortSignal.timeout(8000) });
+                if (res.ok) {
+                    localStorage.setItem(API_URL_KEY, val.replace(/\/$/, ''));
+                    updateDynamicLinks();
+                    statusEl.textContent = '✅ Conectado com sucesso!';
+                    statusEl.className = 'mt-4 text-sm text-center text-green-600 font-bold';
+                    setTimeout(() => {
+                        closeApiConfig();
+                        loadDashboard();
+                        loadMembers();
+                        loadFeatures();
+                    }, 1000);
+                } else {
+                    throw new Error(`Status ${res.status}`);
+                }
+            } catch (e) {
+                statusEl.textContent = `❌ Não foi possível conectar. Verifique a URL. (${e.message})`;
+                statusEl.className = 'mt-4 text-sm text-center text-red-500';
+            }
+        }
+
+        async function forceReconnect() {
+            const btn = document.getElementById('reconnectBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Reconectando...';
+            try {
+                const res = await fetch(getApiUrl().replace('/api', '') + '/api/reconnect', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                Swal.fire('Reconexão', data.message || 'Tentativa iniciada!', 'success');
+            } catch (e) {
+                Swal.fire('Erro', 'Não foi possível reconectar.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🔄 Reconectar WA';
+            }
+        }
+
+        async function clearSession() {
+            const result = await Swal.fire({
+                title: 'Limpar Sessão?',
+                text: "Isso removerá os arquivos de autenticação e forçará um novo QR Code. Use apenas se a conexão estiver travada.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Sim, limpar e reiniciar!'
+            });
+
+            if (result.isConfirmed) {
+                const btn = document.getElementById('clearSessionBtn');
+                btn.disabled = true;
+                btn.textContent = '⏳ Limpando...';
+                try {
+                    const res = await fetch(getApiUrl().replace('/api', '') + '/api/clear-session', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const data = await res.json();
+                    Swal.fire('Sessão Limpa', data.message || 'Sessão removida com sucesso!', 'success');
+                } catch (e) {
+                    Swal.fire('Erro', 'Não foi possível limpar a sessão.', 'error');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = '🧹 Limpar Sessão';
+                }
+            }
+        }
+
+        console.log('API URL:', getApiUrl());
+
+        let currentPage = 1;
+        let totalPages = 1;
+        let searchTimer = null;
+        let currentSearch = '';
+        const limit = 10;
+        let maintenance = false;
+
+        // AUTHENTICATION
+        const TOKEN_KEY = 'igreja_admin_token';
+        let token = localStorage.getItem(TOKEN_KEY);
+
+        async function checkAuth() {
+            if (!token) {
+                const { value: pass } = await Swal.fire({
+                    title: 'Acesso Restrito',
+                    input: 'password',
+                    inputLabel: 'Digite a senha de administrador',
+                    inputPlaceholder: 'Senha...',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    confirmButtonText: 'Entrar'
+                });
+
+                if (pass) {
+                    token = pass; // In real app, exchange for JWT. Here simpler.
+                    localStorage.setItem(TOKEN_KEY, token);
+                    loadDashboard();
+                    loadMembers();
+                    loadFeatures();
+                } else {
+                    location.reload();
+                }
+            } else {
+                loadDashboard();
+                loadMembers();
+                loadFeatures();
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem(TOKEN_KEY);
+            location.reload();
+        }
+
+        function getHeaders() {
+            return {
+                'Authorization': `Bearer ${token}`
+            };
+        }
+
+        // DASHBOARD
+        async function loadDashboard() {
+            try {
+                const res = await fetch(`${getApiUrl()}/dashboard-stats`, { headers: getHeaders() });
+
+                // Correção Loop Infinito: Só deslogar se for erro de Auth (401/403)
+                if (res.status === 401 || res.status === 403) {
+                    console.warn("Acesso negado. Deslogando...");
+                    logout();
+                    return;
+                }
+
+                if (!res.ok) throw new Error(`Falha API: ${res.status}`);
+
+                const data = await res.json();
+
+                document.getElementById('totalMembers').innerText = data.totalMembers;
+                document.getElementById('newToday').innerText = data.newToday;
+
+                const botStatusEl = document.getElementById('botStatus');
+                if (data.botStatus === 'online') {
+                    botStatusEl.innerHTML = '<span class="w-2 h-2 bg-green-500 rounded-full inline-block mr-1"></span> Online';
+                    botStatusEl.className = 'text-green-600 font-bold';
+                } else {
+                    botStatusEl.innerText = 'Offline';
+                    botStatusEl.className = 'text-red-500 font-bold';
+                }
+
+                maintenance = data.maintenance;
+                updateMaintenanceUI();
+
+                // Chart
+                renderChart(data.lifeGroups);
+
+            } catch (err) {
+                console.error("Erro no Dashboard:", err);
+                // Não chamar logout() aqui para erro genérico (ex: API offline)
+                document.getElementById('totalMembers').innerText = "Erro";
+                document.getElementById('botStatus').innerText = "Erro Conexão";
+                document.getElementById('botStatus').className = "text-yellow-600 font-bold";
+            }
+        }
+
+        let chartInstance = null;
+        function renderChart(dataObj) {
+            const ctx = document.getElementById('lifeChart').getContext('2d');
+            const labels = Object.keys(dataObj);
+            const values = Object.values(dataObj);
+
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Membros por Célula',
+                        data: values,
+                        backgroundColor: '#6366f1',
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false, // Importante para respeitar altura do container
+                    scales: {
+                        y: { beginAtZero: true, grid: { display: false } },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        // MEMBERS
+        async function loadMembers(page = 1) {
+            try {
+                const res = await fetch(`${getApiUrl()}/members?page=${page}&limit=${limit}&search=${encodeURIComponent(currentSearch)}`, { headers: getHeaders() });
+                if (!res.ok) {
+                    const error = await res.json();
+                    throw new Error(error.error || "Falha ao carregar");
+                }
+
+                const data = await res.json();
+                const members = data.data;
+
+                currentPage = data.page;
+                totalPages = data.totalPages;
+
+                updateTable(members);
+                updatePagination();
+
+            } catch (err) {
+                console.error(err);
+                const table = document.getElementById('membersTable');
+                table.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-red-500">Erro: ${err.message}</td></tr>`;
+            }
+        }
+
+        function updateTable(members) {
+            const table = document.getElementById('membersTable');
+            if (members.length === 0) {
+                table.innerHTML = '<tr><td colspan="4" class="p-6 text-center">Nenhum membro encontrado.</td></tr>';
+                return;
+            }
+
+            table.innerHTML = members.map(m => `
+                <tr class="hover:bg-gray-50 transition border-b border-gray-50 last:border-0">
+                    <td class="p-4 font-medium text-gray-900">${m.name || 'Sem nome'}</td>
+                    <td class="p-4 text-gray-500">${m.phone_contact || formatPhone(m.phone)}</td>
+                    <td class="p-4"><span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-bold uppercase">${m.life_group || 'N/A'}</span></td>
+                    <td class="p-4">
+                        <button onclick="messageMember('${m.phone}')" class="text-indigo-600 hover:text-indigo-800 font-medium text-sm border border-indigo-100 px-3 py-1 rounded-lg hover:bg-indigo-50">
+                            💬 Conversar
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function formatPhone(p) {
+            // Simple visual formatter
+            return p.replace(/(\d{2})(\d{2})(\d{5})(\d{4})/, '+$1 ($2) $3-$4');
+        }
+
+        function updatePagination() {
+            document.getElementById('pageInfo').innerText = `Página ${currentPage} de ${totalPages}`;
+            document.getElementById('prevBtn').disabled = currentPage <= 1;
+            document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+        }
+
+        function nextPage() {
+            if (currentPage < totalPages) loadMembers(currentPage + 1);
+        }
+
+        function prevPage() {
+            if (currentPage > 1) loadMembers(currentPage - 1);
+        }
+
+        function debounceSearch() {
+            const val = document.getElementById('searchInput').value;
+            currentSearch = val;
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => {
+                currentPage = 1;
+                loadMembers(1);
+            }, 500);
+        }
+
+        // EXPORT CSV
+        async function exportCSV() {
+            // Fetches ALL members for export (ignoring pagination, but respecting search)
+            try {
+                // Limit set high for export
+                const res = await fetch(`${getApiUrl()}/members?page=1&limit=100000&search=${encodeURIComponent(currentSearch)}`, { headers: getHeaders() });
+                const data = await res.json();
+
+                if (!data.data || data.data.length === 0) {
+                    return Swal.fire("Vazio", "Nada para exportar", "info");
+                }
+
+                let csvContent = "data:text/csv;charset=utf-8,";
+                csvContent += "Nome,Telefone,Email,Nascimento,Endereco,Celula\n";
+
+                data.data.forEach(m => {
+                    const row = [
+                        m.name,
+                        m.phone_contact || m.phone,
+                        m.email || '',
+                        m.birth_date || '',
+                        m.address || '',
+                        m.life_group || ''
+                    ].map(e => `"${String(e).replace(/"/g, '""')}"`).join(",");
+                    csvContent += row + "\n";
+                });
+
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "membros_paz_church_mondubim.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (e) {
+                Swal.fire("Erro", "Falha ao exportar", "error");
+            }
+        }
+
+        // ACTIONS
+        async function sendBroadcast() {
+            const msg = document.getElementById('broadcastMsg').value;
+            const fileInput = document.getElementById('broadcastImg');
+            const file = fileInput.files[0];
+
+            if (!msg && !file) return Swal.fire('Atenção', 'Digite uma mensagem ou selecione uma foto!', 'warning');
+
+            const result = await Swal.fire({
+                title: 'Confirmar Disparo',
+                text: "Isso enviará a mensagem para TODOS. Deseja continuar?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#4f46e5',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sim, disparar!'
+            });
+
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Processando...',
+                    text: 'O servidor está preparando o disparo. Pode fechar se quiser.',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+
+                try {
+                    const formData = new FormData();
+                    formData.append('message', msg);
+
+                    const scheduledTime = document.getElementById('broadcastTime').value;
+                    if (scheduledTime) {
+                        formData.append('scheduledTime', scheduledTime);
+                    }
+                    if (file) {
+                        formData.append('image', file);
+                    }
+                    // Adicionar token
+                    // Fetch não suporta headers fáceis com FormData direto se sobrescrever o Content-Type, mas sem sobrescrever vai ok.
+                    // Para headers de Auth:
+
+                    const res = await fetch(`${getApiUrl()}/broadcast`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}` // FormData boundary é automatico se nao por Content-Type
+                        },
+                        body: formData
+                    });
+
+                    const data = await res.json();
+
+                    if (data.success) {
+                        Swal.fire('Sucesso!', data.message || `Disparo iniciado!`, 'success');
+                        document.getElementById('broadcastMsg').value = '';
+                        document.getElementById('broadcastTime').value = '';
+                        fileInput.value = '';
+                    } else {
+                        Swal.fire('Erro', data.error || 'Houve um problema.', 'error');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    Swal.fire('Erro', 'Falha na comunicação com o servidor.', 'error');
+                }
+            }
+        }
+
+        // Maintenance
+        function updateMaintenanceUI() {
+            const btn = document.getElementById('maintenanceBtn');
+            const status = document.getElementById('maintStatus');
+            if (maintenance) {
+                btn.classList.add('bg-red-50', 'text-red-600', 'border-red-200');
+                btn.innerHTML = '🔴 Manutenção ATIVA';
+                status.innerText = "ATIVA";
+                status.className = "text-red-500 font-bold";
+            } else {
+                btn.classList.remove('bg-red-50', 'text-red-600', 'border-red-200');
+                btn.innerHTML = '🛠️ Modo Manutenção';
+                status.innerText = "Desativada";
+                status.className = "text-gray-500 font-bold";
+            }
+        }
+
+        async function toggleMaintenance() {
+            const newState = !maintenance;
+            try {
+                const res = await fetch(`${getApiUrl()}/maintenance`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...getHeaders()
+                    },
+                    body: JSON.stringify({ enabled: newState })
+                });
+                if (res.ok) {
+                    maintenance = newState;
+                    updateMaintenanceUI();
+                    Swal.fire("Sucesso", `Manutenção ${maintenance ? 'ATIVADA' : 'DESATIVADA'}`, 'success');
+                }
+            } catch (e) {
+                Swal.fire("Erro", "Falha ao alterar estado", "error");
+            }
+        }
+
+        // Features IA
+        async function loadFeatures() {
+            try {
+                const res = await fetch(`${getApiUrl()}/features`, { headers: getHeaders() });
+                if (!res.ok) throw new Error("Erro api features");
+                const features = await res.json();
+
+                // Group by category
+                const byCategory = {};
+                features.forEach(f => {
+                    if (!byCategory[f.category]) byCategory[f.category] = [];
+                    byCategory[f.category].push(f);
+                });
+
+                const container = document.getElementById('featuresContainer');
+                let html = '';
+
+                for (const cat in byCategory) {
+                    html += `<div class="mb-4"><h3 class="text-lg font-bold text-indigo-600 mb-3 border-b border-gray-100 pb-2">${cat}</h3><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">`;
+
+                    byCategory[cat].forEach(f => {
+                        html += `
+                            <div class="border border-gray-100 rounded-xl p-4 bg-gray-50 hover:shadow-md transition flex flex-col justify-between">
+                                <div>
+                                    <div class="flex justify-between items-start mb-2 gap-2">
+                                        <h4 class="font-bold text-gray-800 text-sm leading-tight">${f.title}</h4>
+                                        <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                                          <input type="checkbox" value="" class="sr-only peer" ${f.enabled ? 'checked' : ''} onchange="toggleFeature('${f.id}', this.checked)">
+                                          <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                                        </label>
+                                    </div>
+                                    <p class="text-xs text-gray-500">${f.description}</p>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += `</div></div>`;
+                }
+
+                container.innerHTML = html;
+
+            } catch (e) {
+                console.error("Erro features", e);
+                document.getElementById('featuresContainer').innerHTML = "<p class='text-red-500'>Erro ao carregar módulos da IA.</p>";
+            }
+        }
+
+        async function toggleFeature(id, isChecked) {
+            try {
+                await fetch(`${getApiUrl()}/features/toggle`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...getHeaders() },
+                    body: JSON.stringify({ id, enabled: isChecked })
+                });
+
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'bottom-end',
+                    showConfirmButton: false,
+                    timer: 2000,
+                    timerProgressBar: true
+                });
+                Toast.fire({ icon: 'success', title: 'Módulo atualizado!' });
+            } catch (e) {
+                Swal.fire("Erro", "Não foi possível alterar a funcionalidade da IA", "error");
+            }
+        }
+
+        function messageMember(phone) {
+            window.open(`https://wa.me/${phone}`, '_blank');
+        }
+
+        // Init
+        updateDynamicLinks();
+
+        // Se não tiver URL salva, abre o modal de configuração automaticamente
+        if (!localStorage.getItem(API_URL_KEY) && location.origin.includes('netlify') ||
+            !localStorage.getItem(API_URL_KEY) && location.origin.includes('github.io') ||
+            !localStorage.getItem(API_URL_KEY) && location.origin.includes('pages') ||
+            !localStorage.getItem(API_URL_KEY) && location.port === '5500') {
+            // Abrir modal automaticamente se acessado de fora do servidor
+            setTimeout(() => openApiConfig(), 400);
+        } else {
+            checkAuth();
+        }
+
+        // Auto-refresh do dashboard a cada 30 segundos para monitorar status do bot em tempo real
+        setInterval(() => {
+            if (token) loadDashboard();
+        }, 30000);
+    </script>
+</body>
+
+</html>
