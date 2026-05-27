@@ -521,19 +521,6 @@ function renderChart() {
             }
         }
     });
-                y: {
-                    grid: { color: 'rgba(255,255,255,0.05)' },
-                    beginAtZero: true
-                },
-                x: {
-                    grid: { display: false }
-                }
-            },
-            plugins: {
-                legend: { position: 'top', labels: { usePointStyle: true } }
-            }
-        }
-    });
 }
 
 // --- Utils ---
