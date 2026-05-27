@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import WebSocket from 'ws';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -9,4 +10,11 @@ if (!supabaseUrl || !supabaseKey) {
     console.warn('⚠️ Credenciais do Supabase não encontradas. Verifique o arquivo .env.');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+    auth: {
+        persistSession: false
+    },
+    realtime: {
+        transport: WebSocket as any
+    }
+});
