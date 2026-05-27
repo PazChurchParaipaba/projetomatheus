@@ -521,6 +521,19 @@ function renderChart() {
             }
         }
     });
+                y: {
+                    grid: { color: 'rgba(255,255,255,0.05)' },
+                    beginAtZero: true
+                },
+                x: {
+                    grid: { display: false }
+                }
+            },
+            plugins: {
+                legend: { position: 'top', labels: { usePointStyle: true } }
+            }
+        }
+    });
 }
 
 // --- Utils ---
@@ -808,9 +821,23 @@ async function checkBotStatus() {
         } else {
             document.getElementById('loginSection').style.display = 'block';
             document.getElementById('connectedSection').style.display = 'none';
-            
-            if (data.hasQr && data.qr) {
+            if (data.pairingCode) {
+                document.getElementById('qrImg').style.display = 'none';
+                document.getElementById('qrPlaceholder').style.display = 'none';
+                document.getElementById('qrContainer').style.display = 'block';
+                document.getElementById('qrContainer').innerHTML = `
+                    <div style="background: white; padding: 2rem; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0; margin-top: 15px;">
+                        <h3 style="color: #333; margin-bottom: 10px; font-size: 1.2rem;">Código de Pareamento</h3>
+                        <p style="color: #666; margin-bottom: 20px; font-size: 0.9rem;">No WhatsApp: Configurações > Aparelhos Conectados > Conectar com número de telefone</p>
+                        <div style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #6366f1; background: #eef2ff; padding: 15px; border-radius: 8px; font-family: monospace;">
+                            ${data.pairingCode}
+                        </div>
+                    </div>
+                `;
+                document.getElementById('statusText').innerText = 'Digite o código no seu WhatsApp';
+            } else if (data.hasQr && data.qr) {
                 document.getElementById('qrImg').src = data.qr;
+                document.getElementById('qrImg').style.display = 'block';
                 document.getElementById('qrPlaceholder').style.display = 'none';
                 document.getElementById('qrContainer').style.display = 'block';
                 document.getElementById('statusText').innerText = 'Escaneie agora!';

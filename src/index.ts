@@ -231,6 +231,7 @@ app.get('/api/whatsapp-status', (req: Request, res: Response) => {
         connected: waService.isConnected,
         hasQr: !!waService.qrCodeDataUrl,
         qr: waService.qrCodeDataUrl,
+        pairingCode: waService.pairingCode,
         lastInteraction: new Date(waService.lastMessageAt).toLocaleString()
     });
 });

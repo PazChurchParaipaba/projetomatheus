@@ -33,6 +33,7 @@ export class WhatsAppService {
 
     public qrCodeString: string | null = null;
     public qrCodeDataUrl: string | null = null;
+    public pairingCode: string | null = null;
     public isConnected: boolean = false;
     public connecting: boolean = false;
     private connectionWatchdog: NodeJS.Timeout | null = null;
@@ -164,7 +165,6 @@ export class WhatsAppService {
             this.sock = makeWASocket({
                 logger: pino({ level: 'silent' }), // Alterado para silent para não travar o Koyeb com excesso de logs
                 auth: state,
-                version,
                 browser: ['Chrome', 'Chrome', '120.0.0'], // Configuração moderna e estável para WhatsApp
                 syncFullHistory: false,
                 markOnlineOnConnect: false, // Fundamental para não tomar block de conexão ao ler o QR Code
@@ -174,6 +174,20 @@ export class WhatsAppService {
                     return { conversation: 'Mensagem de fallback' };
                 }
             });
+
+            if (!this.sock.authState.creds.registered && process.env.BOT_PHONE) {
+                setTimeout(async () => {
+                    try {
+                        const phone = process.env.BOT_PHONE!.replace(/\D/g, '');
+                        console.log(`⏳ Solicitando código de pareamento para o número ${phone}...`);
+                        const code = await this.sock!.requestPairingCode(phone);
+                        this.pairingCode = code;
+                        console.log(`\n\n=========================================\n🌟 CÓDIGO DE PAREAMENTO: ${code}\n=========================================\n\n`);
+                    } catch (e) {
+                        console.error('❌ Erro ao solicitar código de pareamento:', e);
+                    }
+                }, 4000); // Espera 4s para a conexão inicializar
+            }
 
             this.sock.ev.on('connection.update', async (update: any) => {
                 const { connection, lastDisconnect, qr } = update;
