@@ -793,7 +793,7 @@ function initApp() {
 
 // --- WhatsApp Bot Logic ---
 let botStatusInterval = null;
-const BOT_API_URL = 'http://localhost:3000'; // Ajuste conforme a porta que o bot roda
+const BOT_API_URL = ''; // Relative path for production
 
 async function checkBotStatus() {
     try {
