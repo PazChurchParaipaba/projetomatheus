@@ -165,7 +165,7 @@ export class WhatsAppService {
             this.sock = makeWASocket({
                 logger: pino({ level: 'silent' }), // Alterado para silent para não travar o Koyeb com excesso de logs
                 auth: state,
-                browser: ['Chrome', 'Chrome', '120.0.0'], // Configuração moderna e estável para WhatsApp
+                browser: Browsers.ubuntu('Chrome'), // Ubuntu/Chrome é o mais recomendado para Pairing Code
                 syncFullHistory: false,
                 markOnlineOnConnect: false, // Fundamental para não tomar block de conexão ao ler o QR Code
                 keepAliveIntervalMs: 30000,
@@ -175,20 +175,6 @@ export class WhatsAppService {
                 }
             });
 
-            if (!this.sock.authState.creds.registered && process.env.BOT_PHONE) {
-                setTimeout(async () => {
-                    try {
-                        const phone = process.env.BOT_PHONE!.replace(/\D/g, '');
-                        console.log(`⏳ Solicitando código de pareamento para o número ${phone}...`);
-                        const code = await this.sock!.requestPairingCode(phone);
-                        this.pairingCode = code;
-                        console.log(`\n\n=========================================\n🌟 CÓDIGO DE PAREAMENTO: ${code}\n=========================================\n\n`);
-                    } catch (e) {
-                        console.error('❌ Erro ao solicitar código de pareamento:', e);
-                    }
-                }, 4000); // Espera 4s para a conexão inicializar
-            }
-
             this.sock.ev.on('connection.update', async (update: any) => {
                 const { connection, lastDisconnect, qr } = update;
                 
@@ -197,6 +183,19 @@ export class WhatsAppService {
                     this.qrCodeDataUrl = await QRCode.toDataURL(qr);
                     console.log('💠 Novo QR Code gerado.');
                     if (qrcodeTerminal) qrcodeTerminal.generate(qr, { small: true });
+
+                    // Solicita o Pairing Code logo após o socket estar pronto e gerar o primeiro QR
+                    if (!this.sock!.authState.creds.registered && process.env.BOT_PHONE && !this.pairingCode) {
+                        try {
+                            const phone = process.env.BOT_PHONE!.replace(/\D/g, '');
+                            console.log(`⏳ Solicitando código de pareamento para o número ${phone}...`);
+                            const code = await this.sock!.requestPairingCode(phone);
+                            this.pairingCode = code;
+                            console.log(`\n\n=========================================\n🌟 CÓDIGO DE PAREAMENTO: ${code}\n=========================================\n\n`);
+                        } catch (e) {
+                            console.error('❌ Erro ao solicitar código de pareamento:', e);
+                        }
+                    }
                 }
 
                 if (connection === 'close') {
