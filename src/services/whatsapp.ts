@@ -274,7 +274,19 @@ export class WhatsAppService {
                 const msg = m.messages[0];
                 if (!msg.message || m.type !== 'notify') return;
                 const remoteJid = msg.key.remoteJid;
-                if (!remoteJid || remoteJid === 'status@broadcast' || msg.key.fromMe) return;
+                if (!remoteJid || remoteJid === 'status@broadcast') return;
+
+                if (msg.key.fromMe) {
+                    // Se o bot estava conversando com essa pessoa e eu mandei mensagem
+                    if (this.userStates[remoteJid]?.type === 'BOT') {
+                        this.setHumanAttendance(remoteJid);
+                        await this.sendMessage(remoteJid, "✅ *Erick assumiu o atendimento*");
+                    } else {
+                        // Garante que o bot não vai interferir em conversas que eu iniciei
+                        this.setHumanAttendance(remoteJid);
+                    }
+                    return;
+                }
 
                 let textBody = msg.message.conversation || msg.message.extendedTextMessage?.text;
                 let imageBase64: string | undefined;
@@ -378,6 +390,13 @@ export class WhatsAppService {
                             }
                         } else {
                             await this.sendMessage(remoteJid, aiResponse);
+                            if (!this.userStates[remoteJid]) {
+                                this.userStates[remoteJid] = {
+                                    type: 'BOT',
+                                    lastInteraction: Date.now(),
+                                    notifiedInactivity: false
+                                };
+                            }
                         }
                     }
                     if (this.sock) await this.sock.sendPresenceUpdate('available', remoteJid);
