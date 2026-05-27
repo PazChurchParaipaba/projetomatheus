@@ -165,7 +165,7 @@ export class WhatsAppService {
                 logger: pino({ level: 'silent' }), // Alterado para silent para não travar o Koyeb com excesso de logs
                 auth: state,
                 version,
-                browser: Browsers.macOS('Desktop'), // Usa o padrão oficial do macOS Desktop para evitar bloqueio de QR Code
+                browser: Browsers.ubuntu('Chrome'), // Ubuntu/Chrome é historicamente a configuração mais estável para evitar bloqueios de QR Code
                 syncFullHistory: false,
                 markOnlineOnConnect: true,
                 keepAliveIntervalMs: 30000,
