@@ -138,6 +138,17 @@ export class WhatsAppService {
         } catch(e) { console.error("Erro ao limpar sessão no banco", e); }
     }
 
+    public async getPairingCode(phone: string): Promise<string> {
+        if (!this.sock) throw new Error("WhatsApp não inicializado ainda. Aguarde.");
+        if (this.isConnected || this.sock.authState.creds.registered) throw new Error("WhatsApp já está conectado ou registrado.");
+        
+        const cleanPhone = phone.replace(/\D/g, '');
+        console.log(`⏳ Solicitando código de pareamento manual para: ${cleanPhone}`);
+        const code = await this.sock.requestPairingCode(cleanPhone);
+        this.pairingCode = code;
+        return code;
+    }
+
     async connectToWhatsApp() {
         try {
             let version;

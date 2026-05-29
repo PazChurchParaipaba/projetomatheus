@@ -79,7 +79,16 @@ app.post('/api/clear-session', authMiddleware, async (req: Request, res: Respons
 
 // --- API Endpoints ---
 
-
+app.post('/api/pairing-code', async (req: Request, res: Response) => {
+    try {
+        const { phone } = req.body;
+        if (!phone) return res.status(400).json({ error: 'Número de telefone é obrigatório' });
+        const code = await waService.getPairingCode(phone);
+        res.json({ success: true, code });
+    } catch (e: any) {
+        res.status(500).json({ error: e.message || 'Erro ao gerar código de pareamento' });
+    }
+});
 
 // Dashboard Stats (Simplificado para Shows)
 app.get('/api/dashboard-stats', async (req: Request, res: Response) => {
@@ -342,7 +351,7 @@ app.get('/qr', (req, res) => {
                     justify-content: center;
                     min-height: 100vh;
                     margin: 0;
-                    overflow: hidden;
+                    overflow: auto;
                 }
                 .container {
                     background: rgba(255, 255, 255, 0.03);
@@ -352,6 +361,9 @@ app.get('/qr', (req, res) => {
                     backdrop-filter: blur(10px);
                     box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
                     text-align: center;
+                    max-width: 600px;
+                    width: 90%;
+                    margin: 40px auto;
                 }
                 .qr-box {
                     background: #fff;
@@ -373,7 +385,7 @@ app.get('/qr', (req, res) => {
                     animation: pulse 2s infinite;
                     margin-top: 10px;
                 }
-                .hidden { display: none; }
+                .hidden { display: none !important; }
                 @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
                 button {
                     background: #6366f1;
@@ -387,53 +399,139 @@ app.get('/qr', (req, res) => {
                     transition: 0.3s;
                 }
                 button:hover { background: #4f46e5; transform: scale(1.05); }
+                input {
+                    padding: 12px;
+                    border-radius: 12px;
+                    border: 1px solid rgba(255,255,255,0.2);
+                    background: rgba(0,0,0,0.2);
+                    color: white;
+                    font-family: 'Outfit';
+                    width: 80%;
+                    margin-bottom: 10px;
+                    text-align: center;
+                }
+                .pairing-code {
+                    font-size: 40px;
+                    letter-spacing: 5px;
+                    font-weight: bold;
+                    color: #4ade80;
+                    margin: 20px 0;
+                    padding: 20px;
+                    background: rgba(74, 222, 128, 0.1);
+                    border-radius: 16px;
+                    border: 1px dashed #4ade80;
+                }
+                .divider {
+                    margin: 40px 0;
+                    border-top: 1px solid rgba(255,255,255,0.1);
+                    position: relative;
+                }
+                .divider span {
+                    position: absolute;
+                    top: -12px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: #0f172a;
+                    padding: 0 15px;
+                    color: #64748b;
+                    font-size: 14px;
+                }
             </style>
         </head>
         <body>
             <div id="content" class="container">
                 <div id="loginSection">
                     <h1 style="margin: 0; font-size: 24px;">Conectar Assistente Matheus Shows</h1>
-                    <p style="color: #94a3b8; font-size: 14px; margin: 10px 0 20px;">Abra o WhatsApp > Aparelhos Conectados > Conectar um aparelho</p>
                     
-                    <div id="qrPlaceholder" class="qr-box">
-                        <div style="width: 280px; height: 280px; color: #000; display: flex; align-items: center; justify-content: center;">
-                            Carregando...
+                    <div style="margin-top: 30px;">
+                        <h2 style="font-size: 18px; color: #e2e8f0;">Opção 1: Código de Pareamento (Recomendado)</h2>
+                        <p style="color: #94a3b8; font-size: 14px;">Abra o WhatsApp > Aparelhos Conectados > Conectar > Vincular com Número de Telefone</p>
+                        <input type="text" id="phoneInput" placeholder="DDD + Número (Ex: 11999999999)" />
+                        <br>
+                        <button id="pairingBtn" onclick="generatePairingCode()">Gerar Código</button>
+                        <div id="pairingCodeDisplay" class="hidden">
+                            <div class="pairing-code" id="codeText">...</div>
+                            <p style="color: #fbbf24; font-size: 13px;">Digite este código no seu WhatsApp.</p>
                         </div>
                     </div>
-                    <div id="qrContainer" class="qr-box hidden">
-                        <img id="qrImg" src="" alt="QR Code" />
+
+                    <div class="divider"><span>OU</span></div>
+
+                    <div>
+                        <h2 style="font-size: 18px; color: #e2e8f0;">Opção 2: QR Code Clássico</h2>
+                        <p style="color: #94a3b8; font-size: 14px;">Abra o WhatsApp > Aparelhos Conectados > Conectar (Escanear)</p>
+                        
+                        <div id="qrPlaceholder" class="qr-box">
+                            <div style="width: 280px; height: 280px; color: #000; display: flex; align-items: center; justify-content: center;">
+                                Carregando QR...
+                            </div>
+                        </div>
+                        <div id="qrContainer" class="qr-box hidden">
+                            <img id="qrImg" src="" alt="QR Code" />
+                        </div>
+                        
+                        <div class="status-pulse" id="statusText">Aguardando...</div>
+                        <div id="connectingStatus" class="hidden" style="color: #fbbf24; font-size: 14px; margin-top: 10px;">⏳ Sincronizando com WhatsApp...</div>
                     </div>
-                    
-                    <div class="status-pulse" id="statusText">Aguardando novo c\u00f3digo...</div>
-                    <div id="connectingStatus" class="hidden" style="color: #fbbf24; font-size: 14px; margin-top: 10px;">\u231b Sincronizando com WhatsApp...</div>
                 </div>
 
                 <div id="connectedSection" class="hidden">
-                    <h1 style="color: #4ade80; margin: 0;">\u2705 Bot Conectado!</h1>
-                    <p style="color: #94a3b8; margin: 10px 0;">O sistema j\u00e1 est\u00e1 online.</p>
+                    <h1 style="color: #4ade80; margin: 0;">✅ Bot Conectado!</h1>
+                    <p style="color: #94a3b8; margin: 10px 0;">O sistema já está online.</p>
                 </div>
 
-                <div style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); pt-20">
+                <div style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
                     <button id="resetBtn" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); font-size: 12px; padding: 8px 16px;">
-                        \ud83d\uddd1\ufe0f Limpar Sess\u00e3o e Reiniciar
+                        🗑️ Limpar Sessão e Reiniciar
                     </button>
-                    <p style="font-size: 10px; color: #475569; margin-top: 10px;">Use apenas se o QR Code demorar mais de 1 minuto para aparecer.</p>
+                    <p style="font-size: 10px; color: #475569; margin-top: 10px;">Use apenas se estiver travado.</p>
                 </div>
             </div>
 
             <script>
+                async function generatePairingCode() {
+                    const phone = document.getElementById('phoneInput').value;
+                    const btn = document.getElementById('pairingBtn');
+                    if (!phone) return alert('Digite o número do telefone com DDD!');
+                    
+                    btn.innerText = 'Gerando...';
+                    btn.disabled = true;
+                    
+                    try {
+                        const res = await fetch('/api/pairing-code', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ phone })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            document.getElementById('pairingCodeDisplay').classList.remove('hidden');
+                            document.getElementById('codeText').innerText = data.code;
+                            btn.style.display = 'none';
+                        } else {
+                            alert(data.error || 'Erro ao gerar código');
+                            btn.innerText = 'Gerar Código';
+                            btn.disabled = false;
+                        }
+                    } catch (e) {
+                        alert('Erro de conexão ao gerar código');
+                        btn.innerText = 'Gerar Código';
+                        btn.disabled = false;
+                    }
+                }
+
                 document.getElementById('resetBtn').onclick = async () => {
-                    if (!confirm('Deseja limpar os arquivos de sess\u00e3o e reiniciar o bot?')) return;
+                    if (!confirm('Deseja limpar os arquivos de sessão e reiniciar o bot?')) return;
                     const btn = document.getElementById('resetBtn');
-                    btn.innerText = '\u231b Limpando...';
+                    btn.innerText = '⏳ Limpando...';
                     btn.disabled = true;
                     try {
-                        const res = await fetch('/api/clear-session', { method: 'POST' });
-                        alert('Sess\u00e3o limpa! A p\u00e1gina ir\u00e1 recarregar.');
+                        await fetch('/api/clear-session', { method: 'POST' });
+                        alert('Sessão limpa! A página irá recarregar.');
                         location.reload();
                     } catch (e) {
-                        alert('Erro ao limpar sess\u00e3o.');
-                        btn.innerText = '\ud83d\uddd1\ufe0f Limpar Sess\u00e3o e Reiniciar';
+                        alert('Erro ao limpar sessão.');
+                        btn.innerText = '🗑️ Limpar Sessão e Reiniciar';
                         btn.disabled = false;
                     }
                 };
@@ -459,7 +557,14 @@ app.get('/qr', (req, res) => {
                             document.getElementById('qrImg').src = qrData.qr;
                             document.getElementById('qrPlaceholder').classList.add('hidden');
                             document.getElementById('qrContainer').classList.remove('hidden');
-                            document.getElementById('statusText').innerText = 'Escaneie agora!';
+                            document.getElementById('statusText').innerText = 'QR Code pronto!';
+                        }
+                        
+                        if (qrData.pairingCode) {
+                            // Se já existe um código gerado via ENV ou outra forma, mostra na tela
+                            document.getElementById('pairingCodeDisplay').classList.remove('hidden');
+                            document.getElementById('codeText').innerText = qrData.pairingCode;
+                            document.getElementById('pairingBtn').style.display = 'none';
                         }
                     } catch (e) {
                         console.error('Erro ao buscar status:', e);
