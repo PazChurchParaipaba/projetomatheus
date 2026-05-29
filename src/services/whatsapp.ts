@@ -184,7 +184,8 @@ export class WhatsAppService {
                     console.log('💠 Novo QR Code gerado.');
                     if (qrcodeTerminal) qrcodeTerminal.generate(qr, { small: true });
 
-                    // Solicita o Pairing Code logo após o socket estar pronto e gerar o primeiro QR
+                    /* 
+                    // Removido a pedido do usuário: forçar QR code
                     if (!this.sock!.authState.creds.registered && process.env.BOT_PHONE && !this.pairingCode) {
                         try {
                             const phone = process.env.BOT_PHONE!.replace(/\D/g, '');
@@ -196,6 +197,8 @@ export class WhatsAppService {
                             console.error('❌ Erro ao solicitar código de pareamento:', e);
                         }
                     }
+                    */
+
                 }
 
                 if (connection === 'close') {
