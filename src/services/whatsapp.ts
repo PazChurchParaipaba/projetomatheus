@@ -1,4 +1,4 @@
-import { default as makeWASocket, DisconnectReason, WASocket, WAMessage, proto, downloadMediaMessage, Browsers, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
+import { default as makeWASocket, DisconnectReason, WASocket, WAMessage, proto, downloadMediaMessage, Browsers, fetchLatestBaileysVersion, useMultiFileAuthState } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -10,8 +10,6 @@ import { supabase } from '../config/supabase';
 import { findNearestLife } from '../utils/location';
 
 import PDFDocument from 'pdfkit';
-import { useSupabaseAuthState } from '../config/useSupabaseAuthState';
-
 interface UserState {
     type: 'HUMAN_ATTENDANCE' | 'BOT';
     step?: string;
@@ -133,9 +131,6 @@ export class WhatsAppService {
         if (fs.existsSync(authPath)) {
             try { fs.rmSync(authPath, { recursive: true, force: true }); } catch(e) {}
         }
-        try {
-            await supabase.from('auth_session').delete().like('id', `${this.authStateStr}_%`);
-        } catch(e) { console.error("Erro ao limpar sessão no banco", e); }
     }
 
     public async getPairingCode(phone: string): Promise<string> {
@@ -161,7 +156,7 @@ export class WhatsAppService {
                 version = [2, 3000, 1015901307]; // Fallback gen\u00e9rico est\u00e1vel
             }
 
-            const { state, saveCreds } = await useSupabaseAuthState(this.authStateStr);
+            const { state, saveCreds } = await useMultiFileAuthState(this.authStateStr);
 
             if (this.sock) {
                 try { 
@@ -225,9 +220,6 @@ export class WhatsAppService {
                         if (fs.existsSync(authPath)) {
                             fs.rmSync(authPath, { recursive: true, force: true });
                         }
-                        try {
-                            await supabase.from('auth_session').delete().like('id', `${this.authStateStr}_%`);
-                        } catch(e) {}
                         this.qrCodeString = null;
                         this.qrCodeDataUrl = null;
                         this.retryCount = 0;
